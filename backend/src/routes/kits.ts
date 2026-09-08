@@ -9,6 +9,8 @@ import {
 
 import { runPipeline } from "../pipeline/runPipeline";
 import { generateQuestionsForCategory } from "../pipeline/generateQuestions";
+import { buildSchedule } from "../pipeline/schedule";
+import { findUncoveredRequirements } from "../pipeline/coverage";
 
 const router = Router();
 
@@ -534,4 +536,105 @@ router.post(
       }
     }
   );
+
+/**
+ * DELETE /api/kits/:id/questions/:questionId
+ */
+router.delete(
+  "/:id/questions/:questionId",
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const kitDocument = await Kit.findOne({
+        _id: req.params.id,
+        userId: req.user!.id,
+      });
+
+      if (!kitDocument) {
+        return res.status(404).json({
+          success: false,
+          message: "Kit not found",
+        });
+      }
+
+      const kitData = kitDocument.kit as any;
+
+      const questionIndex =
+        kitData.questions.findIndex(
+          (q: any) =>
+            q.id === req.params.questionId
+        );
+
+      if (questionIndex === -1) {
+        return res.status(404).json({
+          success: false,
+          message: "Question not found",
+        });
+      }
+
+      const [deletedQuestion] =
+        kitData.questions.splice(
+          questionIndex,
+          1
+        );
+
+      // Remove state references
+      kitDocument.editorState.editedQuestionIds =
+        kitDocument.editorState.editedQuestionIds.filter(
+          (id) => id !== req.params.questionId
+        );
+
+      kitDocument.editorState.manualQuestionIds =
+        kitDocument.editorState.manualQuestionIds.filter(
+          (id) => id !== req.params.questionId
+        );
+
+      kitDocument.editorState.pinnedQuestionIds =
+        kitDocument.editorState.pinnedQuestionIds.filter(
+          (id) => id !== req.params.questionId
+        );
+
+      // Recalculate coverage
+      kitData.coverage.uncovered_requirement_ids =
+        findUncoveredRequirements(
+          kitData.role.requirements,
+          kitData.questions
+        );
+
+      // Rebuild schedule so deleted IDs cannot remain
+      kitData.schedule = buildSchedule(
+        kitData.role.requirements,
+        kitData.questions,
+        kitData.schedule.days_available
+      );
+
+      kitDocument.markModified("kit");
+      kitDocument.markModified("editorState");
+
+      await kitDocument.save();
+
+      return res.json({
+        success: true,
+        deleted_question_id:
+          deletedQuestion.id,
+        coverage:
+          kitData.coverage,
+        schedule:
+          kitData.schedule,
+      });
+    } catch (error) {
+      console.error(
+        "Delete question error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Could not delete question",
+      });
+    }
+  }
+);
+
 export default router;
