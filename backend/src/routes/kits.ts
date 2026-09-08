@@ -8,6 +8,7 @@ import {
 } from "../middleware/auth";
 
 import { runPipeline } from "../pipeline/runPipeline";
+import { generateQuestionsForCategory } from "../pipeline/generateQuestions";
 
 const router = Router();
 
@@ -290,6 +291,158 @@ router.get(
         return res.status(500).json({
           success: false,
           message: "Could not update question",
+        });
+      }
+    }
+  );
+
+  const CategorySchema = z.enum([
+    "technical",
+    "behavioural",
+    "system-design",
+    "company-fit",
+  ]);
+  
+  /**
+   * POST /api/kits/:id/regenerate/questions/:category
+   *
+   * Regenerates only untouched questions in one category.
+   * Edited/manual/pinned questions survive.
+   */
+  router.post(
+    "/:id/regenerate/questions/:category",
+    requireAuth,
+    async (req: AuthRequest, res) => {
+      try {
+        const categoryResult = CategorySchema.safeParse(
+          req.params.category
+        );
+  
+        if (!categoryResult.success) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid question category",
+          });
+        }
+  
+        const category = categoryResult.data;
+  
+        const kitDocument = await Kit.findOne({
+          _id: req.params.id,
+          userId: req.user!.id,
+        });
+  
+        if (!kitDocument) {
+          return res.status(404).json({
+            success: false,
+            message: "Kit not found",
+          });
+        }
+  
+        const kitData = kitDocument.kit as any;
+  
+        const protectedIds = new Set([
+          ...kitDocument.editorState.editedQuestionIds,
+          ...kitDocument.editorState.manualQuestionIds,
+          ...kitDocument.editorState.pinnedQuestionIds,
+        ]);
+  
+        const categoryQuestions =
+          kitData.questions.filter(
+            (q: any) => q.category === category
+          );
+  
+        const replaceableQuestions =
+          categoryQuestions.filter(
+            (q: any) => !protectedIds.has(q.id)
+          );
+  
+        // Nothing to regenerate.
+        if (replaceableQuestions.length === 0) {
+          return res.json({
+            success: true,
+            message:
+              "All questions in this category are protected",
+            questions: categoryQuestions,
+          });
+        }
+  
+        const generated =
+          await generateQuestionsForCategory({
+            requirements: kitData.role.requirements,
+            companyBrief: kitData.company_brief,
+            category,
+          });
+  
+        /*
+         * Keep existing IDs so schedule references remain valid.
+         * Example:
+         * old q2 -> regenerated content still uses q2
+         */
+        const replacements = replaceableQuestions.map(
+          (oldQuestion: any, index: number) => {
+            const newQuestion = generated[index];
+  
+            // If model generated fewer questions,
+            // retain the old one instead of deleting it.
+            if (!newQuestion) {
+              return oldQuestion;
+            }
+  
+            return {
+              ...newQuestion,
+              id: oldQuestion.id,
+            };
+          }
+        );
+  
+        const replacementMap = new Map(
+          replacements.map((q: any) => [q.id, q])
+        );
+  
+        kitData.questions = kitData.questions.map(
+          (question: any) =>
+            replacementMap.get(question.id) ??
+            question
+        );
+  
+        kitDocument.markModified("kit");
+  
+        await kitDocument.save();
+  
+        return res.json({
+          success: true,
+          category,
+          preserved_question_ids:
+            categoryQuestions
+              .filter((q: any) =>
+                protectedIds.has(q.id)
+              )
+              .map((q: any) => q.id),
+  
+          regenerated_question_ids:
+            replaceableQuestions.map(
+              (q: any) => q.id
+            ),
+  
+          questions:
+            kitData.questions.filter(
+              (q: any) =>
+                q.category === category
+            ),
+        });
+      } catch (error) {
+        console.error(
+          "Regenerate category error:",
+          error
+        );
+  
+        return res.status(500).json({
+          success: false,
+          message:
+            error instanceof Error
+              ? error.message
+              : "Could not regenerate category",
         });
       }
     }
