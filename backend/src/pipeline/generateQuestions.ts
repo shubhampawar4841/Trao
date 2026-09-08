@@ -19,7 +19,14 @@ const GeneratedQuestionsSchema = z.object({
       requirement_ids: z.array(z.string()),
       prompt: z.string(),
       answer_outline: z.string(),
-      difficulty: z.number().int().min(1).max(3),
+      // LLMs occasionally omit difficulty; default keeps the kit valid.
+      difficulty: z.preprocess(
+        (value) =>
+          value === undefined || value === null || value === ""
+            ? 2
+            : value,
+        z.coerce.number().int().min(1).max(3)
+      ),
     })
   ),
 });

@@ -69,7 +69,9 @@ function getErrorCode(error: unknown): string {
 
   if (
     message.includes("validation") ||
-    message.includes("zod")
+    message.includes("zod") ||
+    message.includes("invalid_type") ||
+    message.includes("expected number")
   ) {
     return "KIT_VALIDATION_FAILED";
   }
