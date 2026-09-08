@@ -141,6 +141,39 @@ export default function KitPage() {
   const [briefRegenerating, setBriefRegenerating] =
     useState(false);
 
+  const [editingFlashcard, setEditingFlashcard] =
+    useState<string | null>(null);
+
+  const [flashcardDraft, setFlashcardDraft] = useState({
+    front: "",
+    back: "",
+  });
+
+  const [addingFlashcard, setAddingFlashcard] =
+    useState(false);
+
+  const [newFlashcard, setNewFlashcard] = useState({
+    front: "",
+    back: "",
+  });
+
+  const [flashcardSaving, setFlashcardSaving] =
+    useState(false);
+
+  const [addingQuestion, setAddingQuestion] =
+    useState(false);
+
+  const [newQuestion, setNewQuestion] = useState({
+    prompt: "",
+    answer_outline: "",
+    category: "technical" as Question["category"],
+    difficulty: 2,
+    requirement_ids: [] as string[],
+  });
+
+  const [questionSaving, setQuestionSaving] =
+    useState(false);
+
   async function loadKit() {
     try {
       const response = await api<{
@@ -201,6 +234,103 @@ export default function KitPage() {
       );
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function addQuestion() {
+    if (
+      !newQuestion.prompt.trim() ||
+      !newQuestion.answer_outline.trim()
+    ) {
+      return;
+    }
+
+    setQuestionSaving(true);
+    setError("");
+
+    try {
+      await api(
+        `/api/kits/${id}/questions`,
+        {
+          method: "POST",
+
+          body: JSON.stringify(newQuestion),
+        }
+      );
+
+      setNewQuestion({
+        prompt: "",
+        answer_outline: "",
+        category: "technical",
+        difficulty: 2,
+        requirement_ids: [],
+      });
+
+      setAddingQuestion(false);
+
+      await loadKit();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not add question"
+      );
+    } finally {
+      setQuestionSaving(false);
+    }
+  }
+
+  async function deleteQuestion(
+    questionId: string
+  ) {
+    const confirmed = window.confirm(
+      "Delete this question?"
+    );
+
+    if (!confirmed) return;
+
+    setError("");
+
+    try {
+      await api(
+        `/api/kits/${id}/questions/${questionId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      await loadKit();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not delete question"
+      );
+    }
+  }
+
+  async function moveQuestion(
+    questionId: string,
+    category: Question["category"]
+  ) {
+    try {
+      await api(
+        `/api/kits/${id}/questions/${questionId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            category,
+          }),
+        }
+      );
+
+      await loadKit();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not move question"
+      );
     }
   }
 
@@ -289,6 +419,117 @@ export default function KitPage() {
       );
     } finally {
       setBriefRegenerating(false);
+    }
+  }
+
+  function startEditingFlashcard(
+    flashcard: Flashcard
+  ) {
+    setEditingFlashcard(flashcard.id);
+
+    setFlashcardDraft({
+      front: flashcard.front,
+      back: flashcard.back,
+    });
+  }
+
+  async function saveFlashcard(
+    flashcardId: string
+  ) {
+    setFlashcardSaving(true);
+    setError("");
+
+    try {
+      await api(
+        `/api/kits/${id}/flashcards/${flashcardId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(flashcardDraft),
+        }
+      );
+
+      await loadKit();
+      setEditingFlashcard(null);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not save flashcard"
+      );
+    } finally {
+      setFlashcardSaving(false);
+    }
+  }
+
+  async function addFlashcard() {
+    if (
+      !newFlashcard.front.trim() ||
+      !newFlashcard.back.trim()
+    ) {
+      return;
+    }
+
+    setFlashcardSaving(true);
+    setError("");
+
+    try {
+      await api(
+        `/api/kits/${id}/flashcards`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            front: newFlashcard.front,
+            back: newFlashcard.back,
+            requirement_ids: [],
+          }),
+        }
+      );
+
+      setNewFlashcard({
+        front: "",
+        back: "",
+      });
+
+      setAddingFlashcard(false);
+
+      await loadKit();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not add flashcard"
+      );
+    } finally {
+      setFlashcardSaving(false);
+    }
+  }
+
+  async function deleteFlashcard(
+    flashcardId: string
+  ) {
+    const confirmed = window.confirm(
+      "Delete this flashcard?"
+    );
+
+    if (!confirmed) return;
+
+    setError("");
+
+    try {
+      await api(
+        `/api/kits/${id}/flashcards/${flashcardId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      await loadKit();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not delete flashcard"
+      );
     }
   }
 
@@ -621,6 +862,140 @@ export default function KitPage() {
         {/* QUESTIONS */}
         {tab === "questions" && (
           <div className="mt-8 space-y-10">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-2xl font-medium">
+                  Questions
+                </h2>
+
+                <p className="mt-2 text-sm text-zinc-500">
+                  Edit, move, regenerate, or add
+                  interview questions.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setAddingQuestion(true)}
+                className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-zinc-300 hover:bg-white/5"
+              >
+                + Add question
+              </button>
+            </div>
+
+            {addingQuestion && (
+              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.03] p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="font-medium">
+                    New question
+                  </div>
+
+                  <span className="rounded-md bg-blue-500/10 px-2 py-1 text-[10px] text-blue-400">
+                    manual
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  <textarea
+                    value={newQuestion.prompt}
+                    onChange={(e) =>
+                      setNewQuestion({
+                        ...newQuestion,
+                        prompt: e.target.value,
+                      })
+                    }
+                    placeholder="Interview question..."
+                    className="min-h-[100px] w-full rounded-xl border border-white/10 bg-black p-4 text-sm outline-none"
+                  />
+
+                  <textarea
+                    value={newQuestion.answer_outline}
+                    onChange={(e) =>
+                      setNewQuestion({
+                        ...newQuestion,
+                        answer_outline: e.target.value,
+                      })
+                    }
+                    placeholder="Answer outline..."
+                    className="min-h-[120px] w-full rounded-xl border border-white/10 bg-black p-4 text-sm outline-none"
+                  />
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <select
+                      value={newQuestion.category}
+                      onChange={(e) =>
+                        setNewQuestion({
+                          ...newQuestion,
+                          category:
+                            e.target.value as Question["category"],
+                        })
+                      }
+                      className="rounded-xl border border-white/10 bg-black px-4 py-3 text-sm"
+                    >
+                      <option value="technical">
+                        Technical
+                      </option>
+                      <option value="behavioural">
+                        Behavioural
+                      </option>
+                      <option value="system-design">
+                        System design
+                      </option>
+                      <option value="company-fit">
+                        Company fit
+                      </option>
+                    </select>
+
+                    <select
+                      value={newQuestion.difficulty}
+                      onChange={(e) =>
+                        setNewQuestion({
+                          ...newQuestion,
+                          difficulty: Number(
+                            e.target.value
+                          ),
+                        })
+                      }
+                      className="rounded-xl border border-white/10 bg-black px-4 py-3 text-sm"
+                    >
+                      <option value={1}>
+                        Difficulty 1
+                      </option>
+                      <option value={2}>
+                        Difficulty 2
+                      </option>
+                      <option value={3}>
+                        Difficulty 3
+                      </option>
+                    </select>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={questionSaving}
+                      onClick={addQuestion}
+                      className="rounded-lg bg-white px-4 py-2 text-xs font-medium text-black disabled:opacity-50"
+                    >
+                      {questionSaving
+                        ? "Adding..."
+                        : "Add question"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAddingQuestion(false)
+                      }
+                      className="rounded-lg border border-white/10 px-4 py-2 text-xs text-zinc-500"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {categories.map(
               (category) => {
                 const questions =
@@ -721,17 +1096,53 @@ export default function KitPage() {
                                 </div>
 
                                 {!isEditing && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      startEditing(
-                                        question
-                                      )
-                                    }
-                                    className="text-xs text-zinc-500 hover:text-white"
-                                  >
-                                    Edit
-                                  </button>
+                                  <div className="flex items-center gap-3">
+                                    <select
+                                      value={question.category}
+                                      onChange={(e) =>
+                                        moveQuestion(
+                                          question.id,
+                                          e.target.value as Question["category"]
+                                        )
+                                      }
+                                      className="rounded-md border border-white/10 bg-black px-2 py-1 text-xs text-zinc-500"
+                                    >
+                                      <option value="technical">
+                                        Technical
+                                      </option>
+                                      <option value="behavioural">
+                                        Behavioural
+                                      </option>
+                                      <option value="system-design">
+                                        System design
+                                      </option>
+                                      <option value="company-fit">
+                                        Company fit
+                                      </option>
+                                    </select>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        startEditing(
+                                          question
+                                        )
+                                      }
+                                      className="text-xs text-zinc-500 hover:text-white"
+                                    >
+                                      Edit
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        deleteQuestion(question.id)
+                                      }
+                                      className="text-xs text-zinc-600 hover:text-red-400"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
                                 )}
                               </div>
 
@@ -861,51 +1272,283 @@ export default function KitPage() {
         {/* FLASHCARDS */}
         {tab === "flashcards" && (
           <section className="mt-8">
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-2xl font-medium">
                   Flashcards
                 </h2>
 
                 <p className="mt-2 text-sm text-zinc-500">
-                  Quick review before the
-                  interview.
+                  Review, edit, or add cards for focused
+                  interview practice.
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() =>
-                  router.push(
-                    `/kits/${id}/practice`
-                  )
-                }
-                className="rounded-xl bg-white px-4 py-2.5 text-sm text-black"
-              >
-                Start practice →
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setAddingFlashcard(true)
+                  }
+                  className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/5"
+                >
+                  + Add flashcard
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      `/kits/${id}/practice`
+                    )
+                  }
+                  className="rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-black"
+                >
+                  Start practice →
+                </button>
+              </div>
             </div>
 
+            {/* ADD FLASHCARD */}
+            {addingFlashcard && (
+              <div className="mb-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.03] p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="text-sm font-medium">
+                    New flashcard
+                  </div>
+
+                  <span className="rounded-md bg-blue-500/10 px-2 py-1 text-[10px] text-blue-400">
+                    manual
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  <textarea
+                    value={newFlashcard.front}
+                    onChange={(e) =>
+                      setNewFlashcard({
+                        ...newFlashcard,
+                        front: e.target.value,
+                      })
+                    }
+                    placeholder="Question / front..."
+                    className="min-h-[100px] w-full rounded-xl border border-white/10 bg-black p-4 text-sm outline-none placeholder:text-zinc-700 focus:border-emerald-500/40"
+                  />
+
+                  <textarea
+                    value={newFlashcard.back}
+                    onChange={(e) =>
+                      setNewFlashcard({
+                        ...newFlashcard,
+                        back: e.target.value,
+                      })
+                    }
+                    placeholder="Answer / back..."
+                    className="min-h-[120px] w-full rounded-xl border border-white/10 bg-black p-4 text-sm text-zinc-300 outline-none placeholder:text-zinc-700 focus:border-emerald-500/40"
+                  />
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={
+                        flashcardSaving ||
+                        !newFlashcard.front.trim() ||
+                        !newFlashcard.back.trim()
+                      }
+                      onClick={addFlashcard}
+                      className="rounded-lg bg-white px-4 py-2 text-xs font-medium text-black disabled:opacity-40"
+                    >
+                      {flashcardSaving
+                        ? "Adding..."
+                        : "Add flashcard"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddingFlashcard(false);
+
+                        setNewFlashcard({
+                          front: "",
+                          back: "",
+                        });
+                      }}
+                      className="rounded-lg border border-white/10 px-4 py-2 text-xs text-zinc-500 hover:text-white"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* FLASHCARD GRID */}
             <div className="grid gap-4 md:grid-cols-2">
               {kit.flashcards.map(
-                (flashcard) => (
-                  <article
-                    key={flashcard.id}
-                    className="rounded-2xl border border-white/10 bg-[#101010] p-5"
-                  >
-                    <div className="text-xs text-zinc-600">
-                      {flashcard.id}
-                    </div>
+                (flashcard) => {
+                  const isEditing =
+                    editingFlashcard ===
+                    flashcard.id;
 
-                    <h3 className="mt-4 font-medium leading-6">
-                      {flashcard.front}
-                    </h3>
+                  const edited =
+                    document.editorState.editedFlashcardIds.includes(
+                      flashcard.id
+                    );
 
-                    <p className="mt-4 border-t border-white/5 pt-4 text-sm leading-6 text-zinc-500">
-                      {flashcard.back}
-                    </p>
-                  </article>
-                )
+                  const manual =
+                    document.editorState.manualFlashcardIds.includes(
+                      flashcard.id
+                    );
+
+                  return (
+                    <article
+                      key={flashcard.id}
+                      className="rounded-2xl border border-white/10 bg-[#101010] p-5"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-zinc-600">
+                            {flashcard.id}
+                          </span>
+
+                          {edited && (
+                            <span className="rounded-md bg-amber-500/10 px-2 py-1 text-[10px] text-amber-400">
+                              edited
+                            </span>
+                          )}
+
+                          {manual && (
+                            <span className="rounded-md bg-blue-500/10 px-2 py-1 text-[10px] text-blue-400">
+                              manual
+                            </span>
+                          )}
+                        </div>
+
+                        {!isEditing && (
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                startEditingFlashcard(
+                                  flashcard
+                                )
+                              }
+                              className="text-xs text-zinc-500 hover:text-white"
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                deleteFlashcard(
+                                  flashcard.id
+                                )
+                              }
+                              className="text-xs text-zinc-600 hover:text-red-400"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {isEditing ? (
+                        <div className="mt-4 space-y-4">
+                          <textarea
+                            value={
+                              flashcardDraft.front
+                            }
+                            onChange={(e) =>
+                              setFlashcardDraft({
+                                ...flashcardDraft,
+                                front: e.target.value,
+                              })
+                            }
+                            className="min-h-[100px] w-full rounded-xl border border-white/10 bg-black p-4 text-sm outline-none focus:border-emerald-500/40"
+                          />
+
+                          <textarea
+                            value={
+                              flashcardDraft.back
+                            }
+                            onChange={(e) =>
+                              setFlashcardDraft({
+                                ...flashcardDraft,
+                                back: e.target.value,
+                              })
+                            }
+                            className="min-h-[120px] w-full rounded-xl border border-white/10 bg-black p-4 text-sm text-zinc-400 outline-none focus:border-emerald-500/40"
+                          />
+
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              disabled={
+                                flashcardSaving
+                              }
+                              onClick={() =>
+                                saveFlashcard(
+                                  flashcard.id
+                                )
+                              }
+                              className="rounded-lg bg-white px-4 py-2 text-xs font-medium text-black disabled:opacity-50"
+                            >
+                              {flashcardSaving
+                                ? "Saving..."
+                                : "Save"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditingFlashcard(
+                                  null
+                                )
+                              }
+                              className="rounded-lg border border-white/10 px-4 py-2 text-xs text-zinc-500"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <h3 className="mt-4 font-medium leading-6">
+                            {flashcard.front}
+                          </h3>
+
+                          <p className="mt-4 border-t border-white/5 pt-4 text-sm leading-6 text-zinc-500">
+                            {flashcard.back}
+                          </p>
+
+                          {flashcard
+                            .requirement_ids
+                            .length > 0 && (
+                            <div className="mt-4 flex gap-2">
+                              {flashcard.requirement_ids.map(
+                                (
+                                  requirementId
+                                ) => (
+                                  <span
+                                    key={
+                                      requirementId
+                                    }
+                                    className="rounded-md bg-white/5 px-2 py-1 text-[10px] text-zinc-600"
+                                  >
+                                    {
+                                      requirementId
+                                    }
+                                  </span>
+                                )
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </article>
+                  );
+                }
               )}
             </div>
           </section>
