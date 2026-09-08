@@ -1,81 +1,109 @@
-import type {
-    Question,
-    Requirement,
-  } from "../schemas/kit.schema";
-  
-  import { findUncoveredRequirements } from "./coverage";
-  import { generateQuestionsForCategory } from "./generateQuestions";
-  import type { CompanyBrief } from "./generateCompanyBrief";
-  
-  interface CoverageResult {
-    questions: Question[];
-    uncovered_requirement_ids: string[];
-    passes: number;
-  }
-  
-  export async function ensureCoverage(
-    requirements: Requirement[],
-    questions: Question[],
-    companyBrief: CompanyBrief
-  ): Promise<CoverageResult> {
-    let currentQuestions = [...questions];
-    let passes = 1;
-  
-    let uncovered = findUncoveredRequirements(
-      requirements,
-      currentQuestions
+import { extractRequirements } from "../pipeline/extractRequirements";
+import { crawlCompany } from "../pipeline/crawlCompany";
+import { generateCompanyBrief } from "../pipeline/generateCompanyBrief";
+import { generateAllQuestions } from "../pipeline/generateQuestions";
+import { ensureCoverage } from "../pipeline/ensureCoverage";
+import { buildSchedule } from "../pipeline/schedule";
+
+const jd = `
+Software Engineer
+
+We are looking for someone with strong React and Node.js experience.
+
+Requirements:
+- Strong React experience
+- Experience building APIs with Node.js and Express
+- Good communication and collaboration skills
+
+Nice to have:
+- Docker experience
+`;
+
+async function main() {
+  console.log("1. Extracting requirements...\n");
+
+  const role = await extractRequirements(jd);
+
+  console.dir(role, {
+    depth: null,
+  });
+
+  console.log("\n2. Crawling company...\n");
+
+  const crawl = await crawlCompany(
+    "https://www.trao.ai"
+  );
+
+  console.log(
+    `Found ${crawl.pages.length + 1} company pages`
+  );
+
+  console.log("\n3. Generating company brief...\n");
+
+  const companyBrief =
+    await generateCompanyBrief(crawl);
+
+  console.dir(companyBrief, {
+    depth: null,
+  });
+
+  console.log("\n4. Generating questions...\n");
+
+  const initialQuestions =
+    await generateAllQuestions(
+      role.requirements,
+      companyBrief
     );
-  
-    const MAX_PASSES = 2;
-  
-    while (
-      uncovered.length > 0 &&
-      passes < MAX_PASSES
-    ) {
-      console.log(
-        `Coverage gap found: ${uncovered.join(", ")}`
-      );
-  
-      const missingRequirements = requirements.filter(
-        (requirement) =>
-          uncovered.includes(requirement.id)
-      );
-  
-      for (const requirement of missingRequirements) {
-        const category =
-          requirement.kind === "behavioural"
-            ? "behavioural"
-            : "technical";
-  
-        const generated =
-          await generateQuestionsForCategory({
-            requirements: [requirement],
-            companyBrief,
-            category,
-          });
-  
-        currentQuestions.push(...generated);
-      }
-  
-      // Reassign stable kit-wide question IDs.
-      currentQuestions = currentQuestions.map(
-        (question, index) => ({
-          ...question,
-          id: `q${index + 1}`,
-        })
-      );
-  
-      passes++;
-  
-      uncovered = findUncoveredRequirements(
-        requirements,
-        currentQuestions
-      );
+
+  console.dir(initialQuestions, {
+    depth: null,
+  });
+
+  console.log("\n5. Running coverage check...\n");
+
+  const coverageResult =
+    await ensureCoverage(
+      role.requirements,
+      initialQuestions,
+      companyBrief
+    );
+
+  console.log(
+    "Coverage passes:",
+    coverageResult.passes
+  );
+
+  console.log(
+    "Uncovered requirement IDs:",
+    coverageResult.uncovered_requirement_ids
+  );
+
+  console.log("\nFinal questions after coverage pass:\n");
+
+  console.dir(
+    coverageResult.questions,
+    {
+      depth: null,
     }
-  
-    return {
-      questions: currentQuestions,
-      uncovered_requirement_ids: uncovered,
-      passes,
-    };
-  }
+  );
+
+  console.log("\n6. Building schedule...\n");
+
+  const schedule = buildSchedule(
+    role.requirements,
+    coverageResult.questions,
+    5
+  );
+
+  console.dir(schedule, {
+    depth: null,
+  });
+
+  console.log("\nPipeline completed successfully.");
+}
+
+main().catch((error) => {
+  console.error("\nPipeline failed:");
+  console.error(error);
+  process.exit(1);
+});
