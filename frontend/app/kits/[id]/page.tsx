@@ -126,6 +126,21 @@ export default function KitPage() {
   const [regenerating, setRegenerating] =
     useState<string | null>(null);
 
+  const [editingBrief, setEditingBrief] =
+    useState(false);
+
+  const [briefDraft, setBriefDraft] =
+    useState({
+      summary: "",
+      what_they_do: "",
+    });
+
+  const [briefSaving, setBriefSaving] =
+    useState(false);
+
+  const [briefRegenerating, setBriefRegenerating] =
+    useState(false);
+
   async function loadKit() {
     try {
       const response = await api<{
@@ -212,6 +227,68 @@ export default function KitPage() {
       );
     } finally {
       setRegenerating(null);
+    }
+  }
+
+  function startEditingBrief() {
+    if (!document) return;
+
+    setBriefDraft({
+      summary: document.kit.company_brief.summary,
+      what_they_do:
+        document.kit.company_brief.what_they_do,
+    });
+
+    setEditingBrief(true);
+  }
+
+  async function saveBrief() {
+    setBriefSaving(true);
+    setError("");
+
+    try {
+      await api(
+        `/api/kits/${id}/company-brief`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(briefDraft),
+        }
+      );
+
+      await loadKit();
+      setEditingBrief(false);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not save company brief"
+      );
+    } finally {
+      setBriefSaving(false);
+    }
+  }
+
+  async function regenerateBrief() {
+    setBriefRegenerating(true);
+    setError("");
+
+    try {
+      await api(
+        `/api/kits/${id}/regenerate/company-brief`,
+        {
+          method: "POST",
+        }
+      );
+
+      await loadKit();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not regenerate company brief"
+      );
+    } finally {
+      setBriefRegenerating(false);
     }
   }
 
@@ -366,33 +443,111 @@ export default function KitPage() {
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_.8fr]">
 
             <section className="rounded-2xl border border-white/10 bg-[#101010] p-6">
-              <div className="text-xs uppercase tracking-[0.15em] text-zinc-600">
-                Company brief
-              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-xs uppercase tracking-[0.15em] text-zinc-600">
+                    Company brief
+                  </div>
 
-              <h2 className="mt-4 text-xl font-medium">
-                About {kit.source.company}
-              </h2>
-
-              <p className="mt-4 leading-7 text-zinc-400">
-                {
-                  kit.company_brief
-                    .summary
-                }
-              </p>
-
-              <div className="mt-7 border-t border-white/10 pt-6">
-                <div className="text-sm font-medium">
-                  What they do
+                  <h2 className="mt-4 text-xl font-medium">
+                    About {kit.source.company}
+                  </h2>
                 </div>
 
-                <p className="mt-3 leading-7 text-zinc-500">
-                  {
-                    kit.company_brief
-                      .what_they_do
-                  }
-                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={startEditingBrief}
+                    className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-400 transition hover:bg-white/5 hover:text-white"
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={regenerateBrief}
+                    disabled={briefRegenerating}
+                    className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-400 transition hover:bg-white/5 hover:text-white disabled:opacity-50"
+                  >
+                    {briefRegenerating
+                      ? "Regenerating..."
+                      : "↻ Regenerate"}
+                  </button>
+                </div>
               </div>
+
+              {editingBrief ? (
+                <div className="mt-6 space-y-4">
+                  <div>
+                    <label className="mb-2 block text-xs uppercase tracking-wider text-zinc-600">
+                      Summary
+                    </label>
+
+                    <textarea
+                      value={briefDraft.summary}
+                      onChange={(e) =>
+                        setBriefDraft({
+                          ...briefDraft,
+                          summary: e.target.value,
+                        })
+                      }
+                      className="min-h-[130px] w-full rounded-xl border border-white/10 bg-black p-4 text-sm leading-6 text-zinc-300 outline-none focus:border-emerald-500/40"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs uppercase tracking-wider text-zinc-600">
+                      What they do
+                    </label>
+
+                    <textarea
+                      value={briefDraft.what_they_do}
+                      onChange={(e) =>
+                        setBriefDraft({
+                          ...briefDraft,
+                          what_they_do: e.target.value,
+                        })
+                      }
+                      className="min-h-[160px] w-full rounded-xl border border-white/10 bg-black p-4 text-sm leading-6 text-zinc-300 outline-none focus:border-emerald-500/40"
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={saveBrief}
+                      disabled={briefSaving}
+                      className="rounded-lg bg-white px-4 py-2 text-xs font-medium text-black disabled:opacity-50"
+                    >
+                      {briefSaving ? "Saving..." : "Save changes"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditingBrief(false)}
+                      className="rounded-lg border border-white/10 px-4 py-2 text-xs text-zinc-500 hover:text-white"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="mt-4 leading-7 text-zinc-400">
+                    {kit.company_brief.summary}
+                  </p>
+
+                  <div className="mt-7 border-t border-white/10 pt-6">
+                    <div className="text-sm font-medium">
+                      What they do
+                    </div>
+
+                    <p className="mt-3 leading-7 text-zinc-500">
+                      {kit.company_brief.what_they_do}
+                    </p>
+                  </div>
+                </>
+              )}
 
               <div className="mt-7">
                 <div className="mb-3 text-xs uppercase tracking-wider text-zinc-600">
