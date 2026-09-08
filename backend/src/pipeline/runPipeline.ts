@@ -15,6 +15,7 @@ interface RunPipelineInput {
   jd: string;
   company_url: string;
   days: number;
+  allowPrivateUrls?: boolean;
 }
 
 function inferCompanyName(
@@ -60,6 +61,7 @@ export async function runPipeline({
   jd,
   company_url,
   days,
+  allowPrivateUrls = false,
 }: RunPipelineInput): Promise<Kit> {
   if (!jd.trim()) {
     throw new Error("Job description is required");
@@ -81,7 +83,9 @@ export async function runPipeline({
 
   console.log("Pipeline: crawling company");
 
-  const crawl = await crawlCompany(company_url);
+  const crawl = await crawlCompany(company_url, {
+    allowPrivateUrls,
+  });
 
   const companyName = inferCompanyName(
     company_url,

@@ -45,7 +45,14 @@ function isPrivateIp(ip: string): boolean {
   return false;
 }
 
-async function validateUrl(rawUrl: string): Promise<URL> {
+interface CrawlOptions {
+  allowPrivateUrls?: boolean;
+}
+
+async function validateUrl(
+  rawUrl: string,
+  options: CrawlOptions = {}
+): Promise<URL> {
   let url: URL;
 
   try {
@@ -58,11 +65,16 @@ async function validateUrl(rawUrl: string): Promise<URL> {
     throw new Error("Only HTTP and HTTPS URLs are allowed");
   }
 
-  const allowPrivate =
+  const allowPrivateUrls =
+    options.allowPrivateUrls === true ||
     process.env.ALLOW_PRIVATE_URLS === "true";
 
-  if (!allowPrivate) {
-    if (url.hostname === "localhost") {
+  if (!allowPrivateUrls) {
+    if (
+      url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1" ||
+      url.hostname === "::1"
+    ) {
       throw new Error("Private or loopback URLs are not allowed");
     }
 
@@ -270,9 +282,10 @@ async function fetchPage(
 }
 
 export async function crawlCompany(
-  companyUrl: string
+  companyUrl: string,
+  options: CrawlOptions = {}
 ): Promise<CrawlResult> {
-  const validatedUrl = await validateUrl(companyUrl);
+  const validatedUrl = await validateUrl(companyUrl, options);
 
   const homepageResponse = await axios.get<string>(
     validatedUrl.toString(),

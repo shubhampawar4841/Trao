@@ -50,6 +50,8 @@ function getErrorCode(error: unknown): string {
   if (
     message.includes("invalid company url") ||
     message.includes("could not resolve") ||
+    message.includes("enotfound") ||
+    message.includes("econnrefused") ||
     message.includes("timeout") ||
     message.includes("404") ||
     message.includes("unreachable")
@@ -85,6 +87,7 @@ async function runCase(
       jd: testCase.jd,
       company_url: testCase.company_url,
       days: testCase.days,
+      allowPrivateUrls: true,
     });
 
     console.log(`✓ ${testCase.id}`);
