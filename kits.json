@@ -1,0 +1,321 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-09-08T15:15:37.418Z",
+  "kits": [
+    {
+      "id": "case-trao-swe",
+      "status": "ok",
+      "kit": {
+        "source": {
+          "company": "Trao",
+          "company_url": "https://www.trao.ai",
+          "role": "Software Engineer",
+          "location": "",
+          "jd_chars": 262,
+          "researched_at": "2026-09-08T15:15:27.828Z",
+          "pages_used": [
+            "https://www.trao.ai/",
+            "https://www.trao.ai/careers"
+          ]
+        },
+        "company_brief": {
+          "summary": "Trao is an AI research and development company that embeds a deep‑research lab within client organizations to design, build, and deploy AI systems.  The firm focuses on creating autonomous agents, automating multi‑step processes, and adding intelligent judgment layers across enterprise data, aiming to deliver 10× productivity gains and long‑term competitive advantage for governments, enterprises, and mid‑market clients.",
+          "what_they_do": "Trao builds AI‑native products and services, including autonomous agents that understand and execute real goals end‑to‑end, process automation that turns human‑run workflows into self‑running systems, and enterprise intelligence layers that provide judgment across an organization’s own data and systems.  Their approach involves researching how work actually happens, then rebuilding it with AI to achieve full process automation and new capabilities.",
+          "sources": [
+            "https://www.trao.ai/",
+            "https://www.trao.ai/careers"
+          ]
+        },
+        "role": {
+          "title": "Software Engineer",
+          "seniority": "",
+          "responsibilities": [],
+          "requirements": [
+            {
+              "id": "r1",
+              "text": "Strong React experience",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r2",
+              "text": "Experience building APIs with Node.js and Express",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r3",
+              "text": "Good communication and collaboration skills",
+              "kind": "behavioural",
+              "priority": "must"
+            },
+            {
+              "id": "r4",
+              "text": "Docker experience",
+              "kind": "technical",
+              "priority": "nice"
+            }
+          ]
+        },
+        "questions": [
+          {
+            "id": "q1",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "technical",
+            "prompt": "Explain how you would implement a complex state management solution in a large React application using hooks and context, and how you would optimize performance for a component that renders a list of 10,000 items.",
+            "answer_outline": "Use useReducer for predictable state updates, wrap state and dispatch in a Context provider, memoize expensive calculations with useMemo, useCallback for event handlers, wrap list items with React.memo, implement virtualization (e.g., react-window) to render only visible rows, lazy load components, code‑split with React.lazy, and use useEffect cleanup for side‑effects.",
+            "difficulty": 3
+          },
+          {
+            "id": "q2",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "technical",
+            "prompt": "Describe how you would handle form validation and error handling in a React component that uses uncontrolled inputs, and how you would integrate it with a global error tracking system.",
+            "answer_outline": "Use refs to access input values, validate on submit or onBlur, store errors in local state, display inline messages, trigger global error tracking (e.g., Sentry) by capturing validation errors, and optionally use a higher‑order component or custom hook for reusable validation logic.",
+            "difficulty": 2
+          },
+          {
+            "id": "q3",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "technical",
+            "prompt": "Walk through the steps to design a RESTful API endpoint in Express that supports pagination, filtering, and sorting for a resource with many‑to‑many relationships, and explain how you would handle authentication and rate limiting.",
+            "answer_outline": "Define route with query params (page, limit, sort, filter), use middleware for JWT authentication, validate and sanitize inputs, query database with joins/associations, apply skip/limit for pagination, sort by field, filter by criteria, use express‑rate-limit for per‑IP limits, return consistent JSON response, handle errors with next(err).",
+            "difficulty": 3
+          },
+          {
+            "id": "q4",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "technical",
+            "prompt": "Explain how you would structure an Express application to support both synchronous and asynchronous request handlers, and how you would ensure proper error handling and logging across the application.",
+            "answer_outline": "Organize routes in separate modules, use async/await with try/catch or a wrapper to forward errors to next(), create a centralized error‑handling middleware, log requests with morgan, log errors with winston or bunyan, include stack traces in dev, sanitize error messages in prod, and use process.on('unhandledRejection') for global safety.",
+            "difficulty": 2
+          },
+          {
+            "id": "q5",
+            "requirement_ids": [
+              "r4"
+            ],
+            "category": "technical",
+            "prompt": "Describe how you would containerize a React front‑end and Node.js back‑end using Docker, including best practices for multi‑stage builds and environment variable management.",
+            "answer_outline": "Create separate Dockerfiles for front‑end and back‑end, use multi‑stage builds to copy only production artifacts, expose appropriate ports, use .dockerignore, set environment variables via .env files or Docker secrets, build images with tags, push to registry, and orchestrate with docker‑compose or Kubernetes.",
+            "difficulty": 2
+          },
+          {
+            "id": "q6",
+            "requirement_ids": [
+              "r3"
+            ],
+            "category": "behavioural",
+            "prompt": "Describe a time when you had to collaborate with a cross‑functional team to deliver a project. What was your role, and how did you ensure effective communication among team members?",
+            "answer_outline": "- Context of project and team composition\n- Specific communication strategies used (e.g., regular stand‑ups, shared docs, clear escalation paths)\n- Challenges faced and how they were mitigated\n- Outcome and impact on project success",
+            "difficulty": 2
+          },
+          {
+            "id": "q7",
+            "requirement_ids": [
+              "r3"
+            ],
+            "category": "behavioural",
+            "prompt": "Tell me about a situation where a misunderstanding in communication caused a delay or conflict. How did you handle it, and what did you learn?",
+            "answer_outline": "- Description of the misunderstanding and its impact\n- Steps taken to clarify and resolve the issue (e.g., one‑on‑one meetings, clarifying documentation)\n- Result of the resolution and any process changes implemented\n- Key learning about communication practices",
+            "difficulty": 3
+          },
+          {
+            "id": "q8",
+            "requirement_ids": [
+              "r3"
+            ],
+            "category": "behavioural",
+            "prompt": "Give an example of how you have mentored or coached a colleague to improve their communication skills. What approach did you take?",
+            "answer_outline": "- Identification of the colleague’s communication gaps\n- Coaching methods used (e.g., active listening drills, feedback loops, role‑playing scenarios)\n- Progress observed and measurable improvements\n- Reflection on the effectiveness of the mentorship approach",
+            "difficulty": 2
+          },
+          {
+            "id": "q9",
+            "requirement_ids": [
+              "r1",
+              "r2"
+            ],
+            "category": "system-design",
+            "prompt": "Design a real‑time collaborative document editing platform that uses a React front‑end and a Node.js/Express back‑end. Explain the overall architecture, how you would handle real‑time updates, data consistency, scaling, authentication, and deployment.",
+            "answer_outline": "- Front‑end: React with state management (e.g., Redux or Context) and WebSocket client for real‑time communication.\n- Back‑end: Node.js/Express server exposing REST endpoints for CRUD and a WebSocket (e.g., Socket.io) for real‑time events.\n- Data consistency: Use CRDTs or Operational Transformation to merge concurrent edits.\n- Persistence: Store documents in a database (PostgreSQL or MongoDB) with versioning.\n- Scaling: Horizontal scaling of Express workers behind a load balancer; use Redis Pub/Sub for WebSocket message distribution.\n- Authentication: JWT or OAuth2 tokens issued by an auth service; validate on each request and WebSocket connection.\n- Deployment: Containerize with Docker; orchestrate with Kubernetes or Docker Compose; use CI/CD pipelines.\n- Monitoring: Log aggregation (ELK), metrics (Prometheus), alerting.",
+            "difficulty": 3
+          },
+          {
+            "id": "q10",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "system-design",
+            "prompt": "Design a RESTful API for an AI agent orchestration service that schedules, monitors, and logs autonomous agents. Discuss the API endpoints, authentication, rate limiting, async job handling, database schema, and how you would ensure high availability.",
+            "answer_outline": "- Endpoints: /agents (GET, POST), /agents/:id (GET, PUT, DELETE), /agents/:id/run (POST), /agents/:id/status (GET), /logs (GET).\n- Authentication: JWT with scopes; enforce on each request.\n- Rate limiting: Token bucket per user/IP using Redis.\n- Async jobs: Use a message queue (RabbitMQ or Bull) to enqueue agent runs; worker processes execute and update status.\n- Database: PostgreSQL for agent metadata; Redis for job queue and caching.\n- High availability: Deploy API behind a load balancer; stateless Express instances; use replicated database and queue.\n- Monitoring: Health checks, Prometheus metrics, Grafana dashboards, alerting on failures.",
+            "difficulty": 2
+          },
+          {
+            "id": "q11",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "company-fit",
+            "prompt": "Trao’s AI products often require highly interactive user interfaces that can display real‑time model outputs and allow users to tweak agent parameters. How would you leverage your strong React experience to build a responsive, maintainable UI for such AI‑native applications, and what patterns would you use to keep the UI decoupled from the underlying AI logic?",
+            "answer_outline": "- Discuss component architecture (container/presentational, hooks, context)\n- Explain state management (Redux, Zustand, or React Context) for real‑time data\n- Mention integration with WebSocket or SSE for live updates\n- Talk about lazy loading, code splitting, and performance optimization\n- Highlight testing strategy (Jest, React Testing Library) and CI integration",
+            "difficulty": 2
+          },
+          {
+            "id": "q12",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "company-fit",
+            "prompt": "Trao’s backend services need to expose APIs that serve AI inference results to front‑end clients and other internal services. Describe how you would design a Node.js/Express API to handle high‑throughput requests, ensure secure access, and support versioning for evolving AI models. What middleware and architectural choices would you make?",
+            "answer_outline": "- Outline Express routing structure and use of async/await\n- Discuss middleware for authentication (JWT, OAuth), rate limiting, logging\n- Explain API versioning strategy (URL path, headers)\n- Mention caching (Redis) and load balancing considerations\n- Talk about error handling, monitoring, and graceful degradation",
+            "difficulty": 2
+          },
+          {
+            "id": "q13",
+            "requirement_ids": [
+              "r3"
+            ],
+            "category": "company-fit",
+            "prompt": "In an AI research environment like Trao, collaboration between software engineers, data scientists, and product stakeholders is crucial. Can you share an example from your past work where you facilitated communication across such diverse teams to deliver a complex feature? What challenges did you face and how did you overcome them?",
+            "answer_outline": "- Provide context of project and stakeholders\n- Detail communication methods (stand‑ups, demos, shared docs)\n- Highlight conflict resolution and alignment tactics\n- Discuss tools used (Slack, Jira, Confluence)\n- Reflect on outcomes and lessons learned",
+            "difficulty": 2
+          }
+        ],
+        "flashcards": [
+          {
+            "id": "f1",
+            "front": "What key React patterns should you be comfortable with?",
+            "back": "Component composition, hooks (useState, useEffect), context API, and performance optimization.",
+            "requirement_ids": [
+              "r1"
+            ]
+          },
+          {
+            "id": "f2",
+            "front": "How would you structure a large React application for scalability?",
+            "back": "Use feature-based folder structure, lazy loading, code splitting, and a clear state management strategy.",
+            "requirement_ids": [
+              "r1"
+            ]
+          },
+          {
+            "id": "f3",
+            "front": "Describe how you would design a RESTful API in Node.js with Express?",
+            "back": "Define resources, use proper HTTP verbs, implement middleware for auth, validation, error handling, and document with Swagger.",
+            "requirement_ids": [
+              "r2"
+            ]
+          },
+          {
+            "id": "f4",
+            "front": "What strategies do you use to ensure API performance and reliability?",
+            "back": "Use caching (Redis), rate limiting, async/await, proper error handling, and load testing.",
+            "requirement_ids": [
+              "r2"
+            ]
+          },
+          {
+            "id": "f5",
+            "front": "How do you handle conflict resolution in a team setting?",
+            "back": "Active listening, clear communication, documenting decisions, and using collaborative tools.",
+            "requirement_ids": [
+              "r3"
+            ]
+          },
+          {
+            "id": "f6",
+            "front": "Give an example of a time you improved team communication.",
+            "back": "Implemented daily stand-ups, shared documentation, and used Slack channels for quick feedback.",
+            "requirement_ids": [
+              "r3"
+            ]
+          },
+          {
+            "id": "f7",
+            "front": "What benefits does Docker bring to a development workflow?",
+            "back": "Consistent environments, easy dependency management, and simplified CI/CD pipelines.",
+            "requirement_ids": [
+              "r4"
+            ]
+          }
+        ],
+        "schedule": {
+          "days_available": 5,
+          "days": [
+            {
+              "day": 1,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q1",
+                "q4",
+                "q12"
+              ],
+              "minutes": 50
+            },
+            {
+              "day": 2,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q3",
+                "q6",
+                "q13"
+              ],
+              "minutes": 50
+            },
+            {
+              "day": 3,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q7",
+                "q8",
+                "q5"
+              ],
+              "minutes": 50
+            },
+            {
+              "day": 4,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q9",
+                "q10"
+              ],
+              "minutes": 35
+            },
+            {
+              "day": 5,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q2",
+                "q11"
+              ],
+              "minutes": 30
+            }
+          ]
+        },
+        "coverage": {
+          "uncovered_requirement_ids": [],
+          "passes": 1
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "case-broken-company",
+      "status": "failed",
+      "kit": null,
+      "error": {
+        "code": "COMPANY_UNREACHABLE",
+        "message": "Could not resolve hostname: this-domain-definitely-does-not-exist-trao-test.invalid"
+      }
+    }
+  ]
+}
