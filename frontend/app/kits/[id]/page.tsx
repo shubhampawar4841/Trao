@@ -174,6 +174,11 @@ export default function KitPage() {
   const [questionSaving, setQuestionSaving] =
     useState(false);
 
+  const [scheduleDays, setScheduleDays] = useState(5);
+
+  const [scheduleRegenerating, setScheduleRegenerating] =
+    useState(false);
+
   async function loadKit() {
     try {
       const response = await api<{
@@ -196,6 +201,14 @@ export default function KitPage() {
   useEffect(() => {
     loadKit();
   }, [id]);
+
+  useEffect(() => {
+    if (document) {
+      setScheduleDays(
+        document.kit.schedule.days_available
+      );
+    }
+  }, [document]);
 
   function startEditing(question: Question) {
     setEditingQuestion(question.id);
@@ -331,6 +344,113 @@ export default function KitPage() {
           ? err.message
           : "Could not move question"
       );
+    }
+  }
+
+  async function moveQuestionOrder(
+    questionId: string,
+    direction: "up" | "down"
+  ) {
+    if (!document) return;
+
+    const questions = [...document.kit.questions];
+
+    const currentIndex = questions.findIndex(
+      (q) => q.id === questionId
+    );
+
+    if (currentIndex === -1) return;
+
+    const currentQuestion = questions[currentIndex];
+
+    // Find questions in the same category.
+    const sameCategoryIndexes = questions
+      .map((q, index) => ({
+        q,
+        index,
+      }))
+      .filter(
+        (item) =>
+          item.q.category ===
+          currentQuestion.category
+      )
+      .map((item) => item.index);
+
+    const positionInCategory =
+      sameCategoryIndexes.indexOf(
+        currentIndex
+      );
+
+    const targetPosition =
+      direction === "up"
+        ? positionInCategory - 1
+        : positionInCategory + 1;
+
+    if (
+      targetPosition < 0 ||
+      targetPosition >=
+        sameCategoryIndexes.length
+    ) {
+      return;
+    }
+
+    const targetIndex =
+      sameCategoryIndexes[targetPosition];
+
+    // Swap the two questions.
+    [questions[currentIndex], questions[targetIndex]] = [
+      questions[targetIndex],
+      questions[currentIndex],
+    ];
+
+    try {
+      await api(
+        `/api/kits/${id}/question-order`,
+        {
+          method: "PATCH",
+
+          body: JSON.stringify({
+            question_ids: questions.map(
+              (q) => q.id
+            ),
+          }),
+        }
+      );
+
+      await loadKit();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not reorder questions"
+      );
+    }
+  }
+
+  async function regenerateSchedule() {
+    setScheduleRegenerating(true);
+    setError("");
+
+    try {
+      await api(
+        `/api/kits/${id}/regenerate/schedule`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            days: scheduleDays,
+          }),
+        }
+      );
+
+      await loadKit();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not regenerate schedule"
+      );
+    } finally {
+      setScheduleRegenerating(false);
     }
   }
 
@@ -1097,6 +1217,34 @@ export default function KitPage() {
 
                                 {!isEditing && (
                                   <div className="flex items-center gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        moveQuestionOrder(
+                                          question.id,
+                                          "up"
+                                        )
+                                      }
+                                      className="rounded-md border border-white/10 px-2 py-1 text-xs text-zinc-500 hover:bg-white/5 hover:text-white"
+                                      title="Move up"
+                                    >
+                                      ↑
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        moveQuestionOrder(
+                                          question.id,
+                                          "down"
+                                        )
+                                      }
+                                      className="rounded-md border border-white/10 px-2 py-1 text-xs text-zinc-500 hover:bg-white/5 hover:text-white"
+                                      title="Move down"
+                                    >
+                                      ↓
+                                    </button>
+
                                     <select
                                       value={question.category}
                                       onChange={(e) =>
@@ -1557,19 +1705,54 @@ export default function KitPage() {
         {/* SCHEDULE */}
         {tab === "schedule" && (
           <section className="mt-8">
-            <div>
-              <h2 className="text-2xl font-medium">
-                {
-                  kit.schedule
-                    .days_available
-                }
-                -day preparation plan
-              </h2>
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-2xl font-medium">
+                  {kit.schedule.days_available}-day preparation plan
+                </h2>
 
-              <p className="mt-2 text-sm text-zinc-500">
-                Higher-priority and harder
-                questions are scheduled earlier.
-              </p>
+                <p className="mt-2 text-sm text-zinc-500">
+                  Harder and higher-priority questions are scheduled earlier.
+                </p>
+              </div>
+
+              <div className="flex items-end gap-3">
+                <div>
+                  <label className="mb-2 block text-xs text-zinc-600">
+                    Days available
+                  </label>
+
+                  <input
+                    type="number"
+                    min={1}
+                    max={60}
+                    value={scheduleDays}
+                    onChange={(e) =>
+                      setScheduleDays(
+                        Math.min(
+                          60,
+                          Math.max(
+                            1,
+                            Number(e.target.value)
+                          )
+                        )
+                      )
+                    }
+                    className="w-24 rounded-xl border border-white/10 bg-black px-3 py-2.5 text-sm outline-none focus:border-emerald-500/40"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={regenerateSchedule}
+                  disabled={scheduleRegenerating}
+                  className="rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                >
+                  {scheduleRegenerating
+                    ? "Regenerating..."
+                    : "↻ Regenerate schedule"}
+                </button>
+              </div>
             </div>
 
             <div className="mt-8 space-y-4">
