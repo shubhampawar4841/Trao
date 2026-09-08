@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { groq, GROQ_MODEL } from "../utils/groq";
+import { withRetry } from "../utils/retry";
 import type { Requirement } from "../schemas/kit.schema";
 
 const ExtractionSchema = z.object({
@@ -25,13 +26,14 @@ export interface ExtractedRole {
 export async function extractRequirements(
   jd: string
 ): Promise<ExtractedRole> {
-  const completion = await groq.chat.completions.create({
-    model: GROQ_MODEL,
+  const completion = await withRetry(() =>
+    groq.chat.completions.create({
+      model: GROQ_MODEL,
 
-    messages: [
-      {
-        role: "system",
-        content: `
+      messages: [
+        {
+          role: "system",
+          content: `
 You extract structured information from job descriptions.
 
 IMPORTANT RULES:
@@ -64,23 +66,24 @@ Return JSON only in this exact shape:
   ]
 }
         `.trim(),
-      },
+        },
 
-      {
-        role: "user",
-        content: `
+        {
+          role: "user",
+          content: `
 JOB DESCRIPTION:
 
 ${jd}
         `.trim(),
-      },
-    ],
+        },
+      ],
 
-    temperature: 0.1,
-    response_format: {
-      type: "json_object",
-    },
-  });
+      temperature: 0.1,
+      response_format: {
+        type: "json_object",
+      },
+    })
+  );
 
   const content = completion.choices[0]?.message?.content;
 

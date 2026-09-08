@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { groq, GROQ_MODEL } from "../utils/groq";
+import { withRetry } from "../utils/retry";
 import type { CrawlResult } from "./crawlCompany";
 
 const CompanyBriefSchema = z.object({
@@ -33,18 +34,19 @@ ${page.text.slice(0, 8000)}
 
   const allowedSources = allPages.map((page) => page.url);
 
-  const completion = await groq.chat.completions.create({
-    model: GROQ_MODEL,
-    temperature: 0.1,
+  const completion = await withRetry(() =>
+    groq.chat.completions.create({
+      model: GROQ_MODEL,
+      temperature: 0.1,
 
-    response_format: {
-      type: "json_object",
-    },
+      response_format: {
+        type: "json_object",
+      },
 
-    messages: [
-      {
-        role: "system",
-        content: `
+      messages: [
+        {
+          role: "system",
+          content: `
 You create a factual company brief using ONLY the supplied webpage content.
 
 IMPORTANT:
@@ -65,18 +67,19 @@ Return JSON only:
   "sources": []
 }
         `.trim(),
-      },
+        },
 
-      {
-        role: "user",
-        content: `
+        {
+          role: "user",
+          content: `
 COMPANY RESEARCH:
 
 ${researchContext}
         `.trim(),
-      },
-    ],
-  });
+        },
+      ],
+    })
+  );
 
   const content = completion.choices[0]?.message?.content;
 

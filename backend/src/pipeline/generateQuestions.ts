@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { groq, GROQ_MODEL } from "../utils/groq";
+import { withRetry } from "../utils/retry";
 import type {
   Question,
   Requirement,
@@ -82,8 +83,8 @@ export async function generateQuestionsForCategory({
     )
     .join("\n");
 
-  const completion =
-    await groq.chat.completions.create({
+  const completion = await withRetry(() =>
+    groq.chat.completions.create({
       model: GROQ_MODEL,
 
       temperature: 0.3,
@@ -176,7 +177,8 @@ ${
           `.trim(),
         },
       ],
-    });
+    })
+  );
 
   const content =
     completion.choices[0]?.message?.content;

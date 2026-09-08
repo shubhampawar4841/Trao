@@ -3,6 +3,7 @@ import { crawlCompany } from "../pipeline/crawlCompany";
 import { generateCompanyBrief } from "../pipeline/generateCompanyBrief";
 import { generateAllQuestions } from "../pipeline/generateQuestions";
 import { ensureCoverage } from "../pipeline/ensureCoverage";
+import { generateFlashcards } from "../pipeline/generateFlashcards";
 import { buildSchedule } from "../pipeline/schedule";
 
 const jd = `
@@ -55,9 +56,9 @@ async function main() {
       companyBrief
     );
 
-  console.dir(initialQuestions, {
-    depth: null,
-  });
+  console.log(
+    `Generated ${initialQuestions.length} questions`
+  );
 
   console.log("\n5. Running coverage check...\n");
 
@@ -78,16 +79,18 @@ async function main() {
     coverageResult.uncovered_requirement_ids
   );
 
-  console.log("\nFinal questions after coverage pass:\n");
+  console.log("\n6. Generating flashcards...\n");
 
-  console.dir(
-    coverageResult.questions,
-    {
-      depth: null,
-    }
-  );
+  const flashcards =
+    await generateFlashcards(
+      role.requirements
+    );
 
-  console.log("\n6. Building schedule...\n");
+  console.dir(flashcards, {
+    depth: null,
+  });
+
+  console.log("\n7. Building schedule...\n");
 
   const schedule = buildSchedule(
     role.requirements,
@@ -100,6 +103,23 @@ async function main() {
   });
 
   console.log("\nPipeline completed successfully.");
+
+  console.log("\n=== SUMMARY ===");
+  console.log(
+    `Requirements: ${role.requirements.length}`
+  );
+  console.log(
+    `Questions: ${coverageResult.questions.length}`
+  );
+  console.log(
+    `Flashcards: ${flashcards.length}`
+  );
+  console.log(
+    `Schedule days: ${schedule.days.length}`
+  );
+  console.log(
+    `Uncovered must-haves: ${coverageResult.uncovered_requirement_ids.length}`
+  );
 }
 
 main().catch((error) => {
