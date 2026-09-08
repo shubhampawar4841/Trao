@@ -188,5 +188,110 @@ router.get(
       }
     }
   );
-
+  const UpdateQuestionSchema = z.object({
+    prompt: z.string().trim().min(1).optional(),
+    answer_outline: z.string().trim().min(1).optional(),
+  
+    category: z
+      .enum([
+        "technical",
+        "behavioural",
+        "system-design",
+        "company-fit",
+      ])
+      .optional(),
+  
+    difficulty: z
+      .number()
+      .int()
+      .min(1)
+      .max(3)
+      .optional(),
+  });
+  
+  /**
+   * PATCH /api/kits/:id/questions/:questionId
+   */
+  router.patch(
+    "/:id/questions/:questionId",
+    requireAuth,
+    async (req: AuthRequest, res) => {
+      try {
+        const parsed = UpdateQuestionSchema.safeParse(
+          req.body
+        );
+  
+        if (!parsed.success) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid question update",
+            errors: parsed.error.flatten(),
+          });
+        }
+  
+        const kitDocument = await Kit.findOne({
+          _id: req.params.id,
+          userId: req.user!.id,
+        });
+  
+        if (!kitDocument) {
+          return res.status(404).json({
+            success: false,
+            message: "Kit not found",
+          });
+        }
+  
+        const kitData = kitDocument.kit as any;
+  
+        const question = kitData.questions?.find(
+          (q: any) =>
+            q.id === req.params.questionId
+        );
+  
+        if (!question) {
+          return res.status(404).json({
+            success: false,
+            message: "Question not found",
+          });
+        }
+  
+        Object.assign(
+          question,
+          parsed.data
+        );
+  
+        if (
+          !kitDocument.editorState.editedQuestionIds.includes(
+            req.params.questionId
+          )
+        ) {
+          kitDocument.editorState.editedQuestionIds.push(
+            req.params.questionId
+          );
+        }
+  
+        kitDocument.markModified("kit");
+        kitDocument.markModified("editorState");
+  
+        await kitDocument.save();
+  
+        return res.json({
+          success: true,
+          question,
+          editorState:
+            kitDocument.editorState,
+        });
+      } catch (error) {
+        console.error(
+          "Update question error:",
+          error
+        );
+  
+        return res.status(500).json({
+          success: false,
+          message: "Could not update question",
+        });
+      }
+    }
+  );
 export default router;
