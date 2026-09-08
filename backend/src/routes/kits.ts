@@ -189,6 +189,93 @@ router.get(
       }
     }
   );
+
+const AddQuestionSchema = z.object({
+  prompt: z.string().trim().min(1),
+  answer_outline: z.string().trim().min(1),
+
+  category: z.enum([
+    "technical",
+    "behavioural",
+    "system-design",
+    "company-fit",
+  ]),
+
+  difficulty: z.number().int().min(1).max(3),
+
+  requirement_ids: z.array(z.string()).default([]),
+});
+
+router.post(
+  "/:id/questions",
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const parsed = AddQuestionSchema.safeParse(req.body);
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid question",
+          errors: parsed.error.flatten(),
+        });
+      }
+
+      const kitDocument = await Kit.findOne({
+        _id: req.params.id,
+        userId: req.user!.id,
+      });
+
+      if (!kitDocument) {
+        return res.status(404).json({
+          success: false,
+          message: "Kit not found",
+        });
+      }
+
+      const kitData = kitDocument.kit as any;
+
+      const existingNumbers = kitData.questions
+        .map((q: any) => {
+          const match = q.id.match(/^q(\d+)$/);
+          return match ? Number(match[1]) : 0;
+        });
+
+      const nextNumber =
+        Math.max(0, ...existingNumbers) + 1;
+
+      const question = {
+        id: `q${nextNumber}`,
+        ...parsed.data,
+      };
+
+      kitData.questions.push(question);
+
+      kitDocument.editorState.manualQuestionIds.push(
+        question.id
+      );
+
+      kitDocument.markModified("kit");
+      kitDocument.markModified("editorState");
+
+      await kitDocument.save();
+
+      return res.status(201).json({
+        success: true,
+        question,
+        editorState: kitDocument.editorState,
+      });
+    } catch (error) {
+      console.error("Add question error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Could not add question",
+      });
+    }
+  }
+);
+
   const UpdateQuestionSchema = z.object({
     prompt: z.string().trim().min(1).optional(),
     answer_outline: z.string().trim().min(1).optional(),

@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generated_at": "2026-09-08T16:40:26.832Z",
+  "generated_at": "2026-09-08T16:45:29.878Z",
   "kits": [
     {
       "id": "case-local-company",
@@ -12,15 +12,15 @@
           "role": "Software Engineer",
           "location": "",
           "jd_chars": 108,
-          "researched_at": "2026-09-08T16:40:26.827Z",
+          "researched_at": "2026-09-08T16:45:29.872Z",
           "pages_used": [
             "http://127.0.0.1:7777/",
             "http://127.0.0.1:7777/careers.html"
           ]
         },
         "company_brief": {
-          "summary": "Acme AI is a company that builds AI agents for enterprise workflow automation.",
-          "what_they_do": "They develop AI agents to automate enterprise workflows, create reliable AI systems, and build developer tools.",
+          "summary": "Acme AI develops AI agents to automate enterprise workflows.",
+          "what_they_do": "They build reliable AI systems and developer tools, focusing on enterprise workflow automation.",
           "sources": [
             "http://127.0.0.1:7777/",
             "http://127.0.0.1:7777/careers.html"
@@ -58,9 +58,9 @@
               "r1"
             ],
             "category": "technical",
-            "prompt": "Explain how you would implement a high-performance list component in React that handles thousands of items with minimal re-renders. What techniques would you use?",
-            "answer_outline": "Use virtualization libraries such as react-window or react-virtualized to render only visible items. Memoize row components with React.memo or PureComponent. Use stable keys and avoid inline functions in render. Employ useCallback and useMemo for expensive calculations. Consider shouldComponentUpdate or React.memo to prevent unnecessary updates. Use windowing to keep DOM size small and leverage CSS for smooth scrolling.",
-            "difficulty": 3
+            "prompt": "Explain how you would use React hooks to manage state and side effects in a component that fetches data from an API when it mounts. What are the key differences between useEffect and useLayoutEffect, and when would you choose one over the other?",
+            "answer_outline": "- useState for local state; useEffect for side effects like data fetching.\n- useEffect runs after paint; useLayoutEffect runs synchronously before paint.\n- useEffect is preferred for async operations to avoid blocking UI.\n- useLayoutEffect used when you need to measure DOM before paint.\n- Example code snippet showing fetch in useEffect with cleanup.\n- Discuss dependency array and avoiding infinite loops.",
+            "difficulty": 2
           },
           {
             "id": "q2",
@@ -68,9 +68,9 @@
               "r2"
             ],
             "category": "technical",
-            "prompt": "Describe how you would design a Node.js microservice that processes incoming data streams in real-time, ensuring low latency and high throughput. What libraries and patterns would you use?",
-            "answer_outline": "Use Node.js streams (Readable, Writable) to handle backpressure. Employ worker_threads or cluster module for CPU-bound tasks. Use async/await with proper error handling. Integrate RxJS for reactive stream processing. Use a lightweight framework like Fastify for HTTP endpoints. Implement message queuing (e.g., RabbitMQ, Kafka) for decoupling. Cache results with Redis. Monitor performance with Prometheus and Grafana.",
-            "difficulty": 3
+            "prompt": "Describe how Node.js handles asynchronous I/O operations. How does the event loop work, and what are the phases involved? Provide an example of how you would handle errors in an async/await function.",
+            "answer_outline": "- Node.js uses libuv event loop.\n- Phases: timers, pending callbacks, idle/prepare, poll, check, close callbacks.\n- Async I/O callbacks are queued in poll phase.\n- Example async function with try/catch.\n- Use process.on('unhandledRejection') for global error handling.\n- Discuss microtasks vs macrotasks.",
+            "difficulty": 2
           },
           {
             "id": "q3",
@@ -79,169 +79,139 @@
               "r2"
             ],
             "category": "technical",
-            "prompt": "How would you integrate a React front-end with a Node.js back-end to support real-time updates for an AI agent dashboard? Discuss the technologies and data flow.",
-            "answer_outline": "Use WebSocket or Socket.io for bi-directional real-time communication. Node.js server emits events via Socket.io or GraphQL subscriptions. React front-end listens via useEffect and updates state. Use Redux or React Context for global state. Secure connections with JWT authentication. Handle reconnection logic and fallback to polling if needed.",
-            "difficulty": 2
+            "prompt": "You are building a full‑stack application with React on the frontend and Node.js on the backend. How would you structure the project to ensure a smooth data flow between the client and server? Discuss API design, state management on the client, and any security considerations.",
+            "answer_outline": "- Separate client and server directories.\n- RESTful or GraphQL API design; use Express or Fastify.\n- Use JWT or session cookies for auth.\n- CORS configuration.\n- Client state: Redux, Context API, or local state.\n- Data fetching with fetch/axios, handling loading/error states.\n- Secure endpoints: input validation, rate limiting, helmet.\n- Deployment considerations (proxy, environment variables).",
+            "difficulty": 3
           },
           {
             "id": "q4",
             "requirement_ids": [
-              "r1"
+              "r2"
             ],
             "category": "technical",
-            "prompt": "What are the key differences between class components and functional components in React, and when would you choose one over the other?",
-            "answer_outline": "Class components use lifecycle methods and this.state; functional components use hooks (useState, useEffect). Functional components are lighter, easier to read, and encourage composition. Prefer functional components for new code; use class components only for legacy code or when needing certain lifecycle hooks not easily replicated with hooks.",
-            "difficulty": 1
+            "prompt": "Node.js can be a bottleneck for CPU‑intensive tasks. Explain how you would use clustering or worker threads to improve performance. What are the trade‑offs of each approach?",
+            "answer_outline": "- Clustering: fork multiple processes, each with its own event loop.\n- Use cluster module; load balancing via round‑robin.\n- Worker threads: shared memory, less overhead for I/O bound.\n- Use worker_threads module.\n- Trade‑offs: clustering easier, each process has separate memory; worker threads share memory but need message passing.\n- Use cases: CPU heavy vs I/O heavy.\n- Example code snippets for both.",
+            "difficulty": 3
           },
           {
             "id": "q5",
             "requirement_ids": [
-              "r2"
+              "r3"
             ],
-            "category": "technical",
-            "prompt": "Explain how you would handle authentication and authorization in a Node.js application that serves multiple microservices.",
-            "answer_outline": "Implement JWT-based authentication with a central auth service. Use Passport.js strategies for login. Middleware validates JWT and extracts user roles. Apply role-based access control (RBAC) in each microservice. Store secrets in environment variables or Vault. Use HTTPS, rotate keys, and support token revocation via a blacklist or short-lived tokens.",
+            "category": "behavioural",
+            "prompt": "Describe a situation where you had to explain a complex technical concept to a non-technical stakeholder. How did you ensure they understood, and what was the outcome?",
+            "answer_outline": "Candidate should mention identifying the stakeholder’s knowledge level, simplifying jargon, using analogies or visual aids, checking for understanding through questions or feedback, and summarizing key takeaways. Outcome should include successful adoption of the concept, improved collaboration, or a measurable result such as a project milestone achieved.",
             "difficulty": 2
           },
           {
             "id": "q6",
             "requirement_ids": [
-              "r3"
+              "r1",
+              "r2"
             ],
-            "category": "behavioural",
-            "prompt": "Describe a time when you had to explain a complex technical concept to a non-technical stakeholder. How did you ensure they understood, and what was the outcome?",
-            "answer_outline": "- Context: project and stakeholder\n- Challenge: complexity of concept\n- Approach: simplified language, analogies, visual aids\n- Communication: active listening, checking for understanding\n- Outcome: stakeholder’s approval, successful implementation, feedback",
-            "difficulty": 2
+            "category": "system-design",
+            "prompt": "Design a real‑time collaborative task management dashboard for enterprise workflow automation. The front‑end must be built with React and the back‑end with Node.js. Explain the overall architecture, including how you would handle real‑time updates, data consistency, scaling, and security.",
+            "answer_outline": "- Front‑end: React components (task list, Kanban board, user presence), state management (Redux/Context), WebSocket client (Socket.io or native WebSocket). \n- Back‑end: Node.js server with Express or Fastify, WebSocket server (Socket.io), REST API for CRUD. \n- Data layer: PostgreSQL or MongoDB with optimistic concurrency control. \n- Real‑time sync: publish/subscribe pattern, conflict resolution via Operational Transformation or CRDTs. \n- Scaling: horizontal scaling of Node.js workers behind a load balancer, sticky sessions or token‑based auth for WebSocket. \n- Security: JWT auth, role‑based access control, input validation, rate limiting, TLS, WebSocket origin checks. \n- Monitoring: metrics (Prometheus), logs (ELK), tracing (OpenTelemetry).",
+            "difficulty": 3
           },
           {
             "id": "q7",
             "requirement_ids": [
-              "r3"
+              "r1",
+              "r2"
             ],
-            "category": "behavioural",
-            "prompt": "Tell me about a situation where you had to mediate a conflict between team members. What communication strategies did you use, and what was the result?",
-            "answer_outline": "- Context: team conflict and its impact\n- Challenge: differing viewpoints\n- Approach: neutral facilitation, active listening, summarizing concerns\n- Communication: clear, respectful, solution-focused\n- Result: resolution, improved collaboration, lessons learned",
-            "difficulty": 2
+            "category": "system-design",
+            "prompt": "Architect a scalable AI agent orchestration platform that exposes a REST API built with Node.js and a React‑based admin console. Describe the microservice decomposition, message queue usage, state persistence, load balancing, and monitoring strategy.",
+            "answer_outline": "- Microservices: Agent Manager, Workflow Engine, Data Ingestion, Auth, Metrics. \n- API Gateway: Node.js (Express/Next.js) exposing REST endpoints, JWT auth. \n- Message Queue: RabbitMQ or Kafka for agent task dispatch and event streaming. \n- State persistence: PostgreSQL for workflow definitions, Redis for in‑memory state, Elasticsearch for search. \n- Load balancing: NGINX or AWS ALB for API gateway, Kubernetes Horizontal Pod Autoscaler for services. \n- Observability: Prometheus/Grafana, Loki for logs, Jaeger for tracing. \n- CI/CD: Docker, Helm charts, GitOps. \n- Security: OAuth2, CSP, secure headers, input sanitization.",
+            "difficulty": 3
           },
           {
             "id": "q8",
             "requirement_ids": [
-              "r3"
+              "r1",
+              "r2"
             ],
-            "category": "behavioural",
-            "prompt": "Give an example of a project where you had to collaborate with cross-functional teams. How did you communicate progress and manage expectations?",
-            "answer_outline": "- Context: cross-functional project scope\n- Challenge: aligning priorities and timelines\n- Approach: regular status meetings, shared dashboards, clear documentation\n- Communication: concise updates, transparency about risks\n- Result: on-time delivery, stakeholder satisfaction, process improvements",
+            "category": "system-design",
+            "prompt": "Design a feature‑rich form builder in React that integrates with a Node.js backend to generate AI‑driven workflows. Explain component architecture, dynamic schema handling, validation, plugin system, backend API design, and caching strategy.",
+            "answer_outline": "- React: FormBuilder component, Field components, drag‑and‑drop, JSON schema editor. \n- State: Redux Toolkit with slices for form definition, live preview. \n- Validation: Yup or Zod, custom validators, async validation via API. \n- Plugin system: dynamic import of field types, plugin registry. \n- Backend: Node.js REST API (Express) for CRUD of form schemas, AI workflow generation endpoint. \n- AI integration: call to external AI service, caching results in Redis. \n- Caching: client‑side memoization, server‑side caching of generated workflows. \n- Security: CSRF protection, input sanitization, role‑based access.",
             "difficulty": 2
           },
           {
             "id": "q9",
             "requirement_ids": [
-              "r1",
-              "r2"
+              "r1"
             ],
-            "category": "system-design",
-            "prompt": "Design a scalable single-page application for Acme AI's AI agent dashboard that uses React on the frontend and Node.js on the backend. Explain how you would structure the data flow, state management, and API communication to support real-time updates of agent status.",
-            "answer_outline": "- Outline React component hierarchy and use of hooks or class components.\n- Discuss state management strategy (Context API, Redux, or Zustand) and why it suits real-time data.\n- Explain how to fetch initial data via REST endpoints served by Node.js (Express/REST).\n- Detail the use of WebSockets (Socket.io or native WS) for pushing real-time agent status updates from Node.js to React.\n- Describe how Node.js would publish updates to the socket channel, including event naming and payload structure.\n- Cover error handling, reconnection logic, and optimistic UI updates.\n- Mention scaling considerations: load balancer, horizontal scaling of Node.js instances, sticky sessions or shared socket namespace, and using a message broker (e.g., Redis Pub/Sub) for cross-instance communication.",
+            "category": "company-fit",
+            "prompt": "Acme AI focuses on building intuitive interfaces for AI agents that automate enterprise workflows. How have you used React to create user-friendly dashboards or interfaces that facilitate interaction with AI systems?",
+            "answer_outline": "Candidate should discuss specific React projects, component architecture, state management, integration with APIs, handling real-time data, performance optimization, and how the UI helped users interact with AI workflows.",
             "difficulty": 2
           },
           {
             "id": "q10",
             "requirement_ids": [
-              "r1",
               "r2"
             ],
-            "category": "system-design",
-            "prompt": "Describe how you would design the backend architecture using Node.js to support a high-throughput AI agent orchestration system that exposes a REST API to a React client. Include considerations for authentication, rate limiting, and horizontal scaling.",
-            "answer_outline": "- Choose a framework (Express, Fastify) and justify.\n- Explain authentication strategy (JWT, OAuth2) and token validation middleware.\n- Detail rate limiting implementation (express-rate-limit, Redis store) to protect API.\n- Discuss horizontal scaling: use a load balancer (NGINX/HAProxy), Node.js cluster mode, or container orchestration (Kubernetes).\n- Outline database choice (PostgreSQL, MongoDB) and connection pooling.\n- Mention caching layer (Redis) for frequently accessed data.\n- Explain how to handle statelessness: store session data in external store.\n- Provide a diagram of request flow from React to Node.js, through load balancer, to database, and back.",
-            "difficulty": 3
+            "category": "company-fit",
+            "prompt": "Acme AI relies on Node.js for its backend services that power AI agents. Can you describe your experience building scalable Node.js APIs for AI or data processing pipelines, and how you ensured reliability and performance?",
+            "answer_outline": "Candidate should mention architecture (e.g., microservices, event-driven), use of async/await, handling large data streams, error handling, testing, deployment, monitoring, and any performance tuning or scaling strategies.",
+            "difficulty": 2
           },
           {
             "id": "q11",
             "requirement_ids": [
-              "r1",
-              "r2"
-            ],
-            "category": "system-design",
-            "prompt": "Propose a system design for integrating real-time AI agent feedback into a React-based UI, ensuring low latency and fault tolerance. Discuss how Node.js can serve as a message broker or gateway, and how you would handle data consistency between the frontend and backend.",
-            "answer_outline": "- Describe using Node.js as a gateway that exposes both REST endpoints and WebSocket connections.\n- Explain integration with a message broker (e.g., RabbitMQ or Kafka) for decoupling AI agent services from the gateway.\n- Detail how the gateway subscribes to agent feedback topics and forwards messages to connected React clients via WebSocket.\n- Discuss low-latency strategies: keep-alive connections, compression, and minimal payload.\n- Explain fault tolerance: retry logic, dead-letter queues, health checks, and graceful degradation.\n- Cover data consistency: use optimistic UI updates, versioning, and eventual consistency guarantees.\n- Mention monitoring and observability: metrics, logs, and tracing across gateway, broker, and React app.",
-            "difficulty": 3
-          },
-          {
-            "id": "q12",
-            "requirement_ids": [
-              "r1"
-            ],
-            "category": "company-fit",
-            "prompt": "How have you leveraged React to build user interfaces for enterprise workflow automation tools?",
-            "answer_outline": "- Discuss specific projects where React was used to create dashboards or workflow editors.\n- Highlight integration with backend services or AI components.\n- Mention performance optimizations and accessibility considerations.\n- Explain how the UI improved user productivity or workflow efficiency.",
-            "difficulty": 2
-          },
-          {
-            "id": "q13",
-            "requirement_ids": [
-              "r2"
-            ],
-            "category": "company-fit",
-            "prompt": "Describe a time when you used Node.js to develop a backend service that integrated with AI components for enterprise automation.",
-            "answer_outline": "- Outline the architecture of the Node.js service (API endpoints, data pipelines).\n- Explain how it communicated with AI models or external services.\n- Discuss scalability, error handling, and monitoring.\n- Reflect on the impact on automation throughput or reliability.",
-            "difficulty": 2
-          },
-          {
-            "id": "q14",
-            "requirement_ids": [
               "r3"
             ],
             "category": "company-fit",
-            "prompt": "Can you give an example of how you communicated complex AI system requirements to non-technical stakeholders in a previous role?",
-            "answer_outline": "- Identify the stakeholders and their concerns.\n- Describe the communication strategy (visual aids, analogies, demos).\n- Explain how you ensured alignment and gathered feedback.\n- Highlight the outcome (approved roadmap, successful deployment).",
+            "prompt": "Effective communication is essential when coordinating cross-functional teams on AI automation projects. Tell us about a time when your communication skills helped align stakeholders, resolve conflicts, or drive a project forward in a complex environment.",
+            "answer_outline": "Candidate should provide a concrete example, describe the context, stakeholders involved, communication methods used, challenges faced, actions taken, and the positive outcome or impact on the project.",
             "difficulty": 2
           }
         ],
         "flashcards": [
           {
             "id": "f1",
-            "front": "What are key performance optimizations you can apply in a React component?",
-            "back": "Use memoization (React.memo), avoid unnecessary re-renders, lazy load components, and split code with React.lazy and Suspense.",
+            "front": "What is JSX and how does it differ from regular JavaScript?",
+            "back": "JSX is a syntax extension that allows writing HTML-like code in React components; it compiles to React.createElement calls.",
             "requirement_ids": [
               "r1"
             ]
           },
           {
             "id": "f2",
-            "front": "Explain how you would handle state management in a large React application.",
-            "back": "Choose a state management library (Redux, Zustand, or Context API), structure state in slices, use selectors, and keep state updates immutable.",
+            "front": "Explain the concept of component state in React.",
+            "back": "State is an object that holds data that can change over time; updating state triggers re-render.",
             "requirement_ids": [
               "r1"
             ]
           },
           {
             "id": "f3",
-            "front": "Describe how you would set up a Node.js server to handle RESTful API requests.",
-            "back": "Use Express.js, define routes, apply middleware for parsing JSON, handle async errors, and connect to a database via an ORM like Sequelize.",
+            "front": "What is the event loop in Node.js?",
+            "back": "Single-threaded loop that processes callbacks, I/O events, and microtasks asynchronously.",
             "requirement_ids": [
               "r2"
             ]
           },
           {
             "id": "f4",
-            "front": "What are the best practices for error handling in Node.js?",
-            "back": "Use try/catch in async functions, centralize error handling middleware, log errors with Winston, and return consistent error responses.",
+            "front": "How do you handle asynchronous operations in Node.js?",
+            "back": "Using callbacks, Promises, or async/await to avoid blocking the event loop.",
             "requirement_ids": [
               "r2"
             ]
           },
           {
             "id": "f5",
-            "front": "Can you give an example of how you have communicated a technical concept to a non-technical stakeholder?",
-            "back": "Simplify jargon, use analogies, focus on business impact, and confirm understanding with questions.",
+            "front": "How would you explain a complex technical concept to a non-technical stakeholder?",
+            "back": "Use analogies, avoid jargon, focus on benefits, and ask for feedback.",
             "requirement_ids": [
               "r3"
             ]
           },
           {
             "id": "f6",
-            "front": "How do you handle conflict resolution in a team setting?",
-            "back": "Listen actively, identify common goals, propose win‑win solutions, and follow up to ensure agreement.",
+            "front": "Describe a time you resolved a conflict within a team.",
+            "back": "I listened, identified interests, facilitated discussion, and reached a consensus.",
             "requirement_ids": [
               "r3"
             ]
@@ -254,36 +224,33 @@
               "day": 1,
               "focus": "Interview preparation",
               "question_ids": [
-                "q1",
-                "q11",
-                "q6",
-                "q9",
-                "q14"
+                "q3",
+                "q7",
+                "q5",
+                "q10"
               ],
-              "minutes": 85
+              "minutes": 70
             },
             {
               "day": 2,
               "focus": "Interview preparation",
               "question_ids": [
-                "q2",
-                "q3",
-                "q7",
-                "q12",
-                "q4"
+                "q4",
+                "q1",
+                "q8",
+                "q11"
               ],
-              "minutes": 75
+              "minutes": 65
             },
             {
               "day": 3,
               "focus": "Interview preparation",
               "question_ids": [
-                "q10",
-                "q5",
-                "q8",
-                "q13"
+                "q6",
+                "q2",
+                "q9"
               ],
-              "minutes": 65
+              "minutes": 50
             }
           ]
         },

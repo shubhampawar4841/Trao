@@ -143,6 +143,175 @@ export const KitSchema = z.object({
       .int()
       .nonnegative(),
   }),
+}).superRefine((kit, ctx) => {
+  const requirementIds = new Set(
+    kit.role.requirements.map((r) => r.id)
+  );
+
+  const questionIds = new Set(
+    kit.questions.map((q) => q.id)
+  );
+
+  const flashcardIds = new Set(
+    kit.flashcards.map((f) => f.id)
+  );
+
+  // Duplicate requirement IDs
+  if (
+    requirementIds.size !==
+    kit.role.requirements.length
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Requirement IDs must be unique",
+      path: ["role", "requirements"],
+    });
+  }
+
+  // Duplicate question IDs
+  if (
+    questionIds.size !==
+    kit.questions.length
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Question IDs must be unique",
+      path: ["questions"],
+    });
+  }
+
+  // Duplicate flashcard IDs
+  if (
+    flashcardIds.size !==
+    kit.flashcards.length
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Flashcard IDs must be unique",
+      path: ["flashcards"],
+    });
+  }
+
+  // Questions must reference real requirements
+  kit.questions.forEach((question, index) => {
+    for (const requirementId of question.requirement_ids) {
+      if (!requirementIds.has(requirementId)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Unknown requirement ID: ${requirementId}`,
+          path: [
+            "questions",
+            index,
+            "requirement_ids",
+          ],
+        });
+      }
+    }
+  });
+
+  // Flashcards must reference real requirements
+  kit.flashcards.forEach((flashcard, index) => {
+    for (const requirementId of flashcard.requirement_ids) {
+      if (!requirementIds.has(requirementId)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Unknown requirement ID: ${requirementId}`,
+          path: [
+            "flashcards",
+            index,
+            "requirement_ids",
+          ],
+        });
+      }
+    }
+  });
+
+  // Exactly N schedule days
+  if (
+    kit.schedule.days.length !==
+    kit.schedule.days_available
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      message:
+        "Schedule must contain exactly days_available days",
+      path: ["schedule", "days"],
+    });
+  }
+
+  // Schedule question IDs must exist
+  const scheduledQuestionIds = new Set<string>();
+
+  kit.schedule.days.forEach((day, dayIndex) => {
+    for (const questionId of day.question_ids) {
+      if (!questionIds.has(questionId)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Unknown scheduled question ID: ${questionId}`,
+          path: [
+            "schedule",
+            "days",
+            dayIndex,
+            "question_ids",
+          ],
+        });
+      }
+
+      scheduledQuestionIds.add(questionId);
+    }
+  });
+
+  // Determine which requirements appear in scheduled questions
+  const scheduledRequirementIds = new Set<string>();
+
+  for (const question of kit.questions) {
+    if (!scheduledQuestionIds.has(question.id)) {
+      continue;
+    }
+
+    for (const requirementId of question.requirement_ids) {
+      scheduledRequirementIds.add(requirementId);
+    }
+  }
+
+  // Every must-have must appear in schedule
+  const missingMustRequirements =
+    kit.role.requirements
+      .filter(
+        (requirement) =>
+          requirement.priority === "must" &&
+          !scheduledRequirementIds.has(
+            requirement.id
+          )
+      )
+      .map((requirement) => requirement.id);
+
+  if (missingMustRequirements.length > 0) {
+    ctx.addIssue({
+      code: "custom",
+      message: `Must-have requirements missing from schedule: ${missingMustRequirements.join(
+        ", "
+      )}`,
+      path: ["schedule"],
+    });
+  }
+
+  // Never ship a kit with uncovered must-have requirements
+  if (
+    kit.coverage.uncovered_requirement_ids.length >
+    0
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      message: `Kit still has uncovered requirements: ${kit.coverage.uncovered_requirement_ids.join(
+        ", "
+      )}`,
+      path: [
+        "coverage",
+        "uncovered_requirement_ids",
+      ],
+    });
+  }
 });
 
 export type Requirement =
