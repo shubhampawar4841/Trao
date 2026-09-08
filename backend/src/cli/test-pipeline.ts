@@ -2,7 +2,7 @@ import { extractRequirements } from "../pipeline/extractRequirements";
 import { crawlCompany } from "../pipeline/crawlCompany";
 import { generateCompanyBrief } from "../pipeline/generateCompanyBrief";
 import { generateAllQuestions } from "../pipeline/generateQuestions";
-import { findUncoveredRequirements } from "../pipeline/coverage";
+import { ensureCoverage } from "../pipeline/ensureCoverage";
 import { buildSchedule } from "../pipeline/schedule";
 
 const jd = `
@@ -49,39 +49,57 @@ async function main() {
 
   console.log("\n4. Generating questions...\n");
 
-  const questions = await generateAllQuestions(
-    role.requirements,
-    companyBrief
-  );
+  const initialQuestions =
+    await generateAllQuestions(
+      role.requirements,
+      companyBrief
+    );
 
-  console.dir(questions, {
+  console.dir(initialQuestions, {
     depth: null,
   });
 
-  console.log("\n5. Checking coverage...\n");
+  console.log("\n5. Running coverage check...\n");
 
-  const uncovered =
-    findUncoveredRequirements(
+  const coverageResult =
+    await ensureCoverage(
       role.requirements,
-      questions
+      initialQuestions,
+      companyBrief
     );
 
   console.log(
+    "Coverage passes:",
+    coverageResult.passes
+  );
+
+  console.log(
     "Uncovered requirement IDs:",
-    uncovered
+    coverageResult.uncovered_requirement_ids
+  );
+
+  console.log("\nFinal questions after coverage pass:\n");
+
+  console.dir(
+    coverageResult.questions,
+    {
+      depth: null,
+    }
   );
 
   console.log("\n6. Building schedule...\n");
 
   const schedule = buildSchedule(
     role.requirements,
-    questions,
+    coverageResult.questions,
     5
   );
 
   console.dir(schedule, {
     depth: null,
   });
+
+  console.log("\nPipeline completed successfully.");
 }
 
 main().catch((error) => {
