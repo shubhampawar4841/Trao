@@ -637,4 +637,186 @@ router.delete(
   }
 );
 
+const ReorderQuestionsSchema = z.object({
+  question_ids: z.array(z.string()).min(1),
+});
+
+/**
+ * PATCH /api/kits/:id/question-order
+ */
+router.patch(
+  "/:id/question-order",
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const parsed = ReorderQuestionsSchema.safeParse(req.body);
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid question order",
+          errors: parsed.error.flatten(),
+        });
+      }
+
+      const kitDocument = await Kit.findOne({
+        _id: req.params.id,
+        userId: req.user!.id,
+      });
+
+      if (!kitDocument) {
+        return res.status(404).json({
+          success: false,
+          message: "Kit not found",
+        });
+      }
+
+      const kitData = kitDocument.kit as any;
+      const currentQuestions = kitData.questions;
+
+      const currentIds = currentQuestions.map(
+        (q: any) => q.id
+      );
+
+      const requestedIds = parsed.data.question_ids;
+
+      // Must contain every current question exactly once
+      if (
+        requestedIds.length !== currentIds.length ||
+        new Set(requestedIds).size !== requestedIds.length ||
+        currentIds.some(
+          (id: string) => !requestedIds.includes(id)
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "question_ids must contain every existing question exactly once",
+        });
+      }
+
+      const questionMap = new Map(
+        currentQuestions.map((q: any) => [
+          q.id,
+          q,
+        ])
+      );
+
+      kitData.questions = requestedIds.map(
+        (id) => questionMap.get(id)
+      );
+
+      kitDocument.markModified("kit");
+
+      await kitDocument.save();
+
+      return res.json({
+        success: true,
+        question_ids: kitData.questions.map(
+          (q: any) => q.id
+        ),
+      });
+    } catch (error) {
+      console.error(
+        "Reorder questions error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Could not reorder questions",
+      });
+    }
+  }
+);
+
+const UpdateFlashcardSchema = z.object({
+  front: z.string().trim().min(1).optional(),
+  back: z.string().trim().min(1).optional(),
+});
+
+/**
+ * PATCH /api/kits/:id/flashcards/:flashcardId
+ */
+router.patch(
+  "/:id/flashcards/:flashcardId",
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const parsed = UpdateFlashcardSchema.safeParse(req.body);
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid flashcard update",
+          errors: parsed.error.flatten(),
+        });
+      }
+
+      const kitDocument = await Kit.findOne({
+        _id: req.params.id,
+        userId: req.user!.id,
+      });
+
+      if (!kitDocument) {
+        return res.status(404).json({
+          success: false,
+          message: "Kit not found",
+        });
+      }
+
+      const kitData = kitDocument.kit as any;
+
+      const flashcard = kitData.flashcards.find(
+        (f: any) =>
+          f.id === req.params.flashcardId
+      );
+
+      if (!flashcard) {
+        return res.status(404).json({
+          success: false,
+          message: "Flashcard not found",
+        });
+      }
+
+      Object.assign(
+        flashcard,
+        parsed.data
+      );
+
+      if (
+        !kitDocument.editorState.editedFlashcardIds.includes(
+          req.params.flashcardId
+        )
+      ) {
+        kitDocument.editorState.editedFlashcardIds.push(
+          req.params.flashcardId
+        );
+      }
+
+      kitDocument.markModified("kit");
+      kitDocument.markModified("editorState");
+
+      await kitDocument.save();
+
+      return res.json({
+        success: true,
+        flashcard,
+        editorState:
+          kitDocument.editorState,
+      });
+    } catch (error) {
+      console.error(
+        "Update flashcard error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Could not update flashcard",
+      });
+    }
+  }
+);
+
 export default router;
