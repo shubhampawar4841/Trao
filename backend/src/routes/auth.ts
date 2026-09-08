@@ -2,6 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User } from "../models/User";
+import { requireAuth, type AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
@@ -185,4 +186,31 @@ router.post("/logout", (_req, res) => {
   });
 });
 
+router.get(
+    "/me",
+    requireAuth,
+    async (req: AuthRequest, res) => {
+      const user = await User.findById(req.user!.id).select(
+        "_id email createdAt"
+      );
+  
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: "User no longer exists",
+        });
+      }
+  
+      return res.json({
+        success: true,
+        user: {
+          id: user._id,
+          email: user.email,
+          createdAt: user.createdAt,
+        },
+      });
+    }
+  );
+
 export default router;
+
