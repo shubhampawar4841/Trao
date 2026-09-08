@@ -819,4 +819,219 @@ router.patch(
   }
 );
 
+const AddFlashcardSchema = z.object({
+  front: z.string().trim().min(1),
+  back: z.string().trim().min(1),
+  requirement_ids: z.array(z.string()).default([]),
+});
+
+/**
+ * POST /api/kits/:id/flashcards
+ */
+router.post(
+  "/:id/flashcards",
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const parsed = AddFlashcardSchema.safeParse(req.body);
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid flashcard",
+          errors: parsed.error.flatten(),
+        });
+      }
+
+      const kitDocument = await Kit.findOne({
+        _id: req.params.id,
+        userId: req.user!.id,
+      });
+
+      if (!kitDocument) {
+        return res.status(404).json({
+          success: false,
+          message: "Kit not found",
+        });
+      }
+
+      const kitData = kitDocument.kit as any;
+
+      const existingNumbers = kitData.flashcards.map(
+        (f: any) => {
+          const match = f.id.match(/^f(\d+)$/);
+          return match ? Number(match[1]) : 0;
+        }
+      );
+
+      const nextNumber =
+        Math.max(0, ...existingNumbers) + 1;
+
+      const flashcard = {
+        id: `f${nextNumber}`,
+        ...parsed.data,
+      };
+
+      kitData.flashcards.push(flashcard);
+
+      kitDocument.editorState.manualFlashcardIds.push(
+        flashcard.id
+      );
+
+      kitDocument.markModified("kit");
+      kitDocument.markModified("editorState");
+
+      await kitDocument.save();
+
+      return res.status(201).json({
+        success: true,
+        flashcard,
+        editorState: kitDocument.editorState,
+      });
+    } catch (error) {
+      console.error("Add flashcard error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Could not add flashcard",
+      });
+    }
+  }
+);
+
+/**
+ * DELETE /api/kits/:id/flashcards/:flashcardId
+ */
+router.delete(
+  "/:id/flashcards/:flashcardId",
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const kitDocument = await Kit.findOne({
+        _id: req.params.id,
+        userId: req.user!.id,
+      });
+
+      if (!kitDocument) {
+        return res.status(404).json({
+          success: false,
+          message: "Kit not found",
+        });
+      }
+
+      const kitData = kitDocument.kit as any;
+
+      const index = kitData.flashcards.findIndex(
+        (f: any) =>
+          f.id === req.params.flashcardId
+      );
+
+      if (index === -1) {
+        return res.status(404).json({
+          success: false,
+          message: "Flashcard not found",
+        });
+      }
+
+      const [deleted] = kitData.flashcards.splice(
+        index,
+        1
+      );
+
+      kitDocument.editorState.editedFlashcardIds =
+        kitDocument.editorState.editedFlashcardIds.filter(
+          (id) => id !== req.params.flashcardId
+        );
+
+      kitDocument.editorState.manualFlashcardIds =
+        kitDocument.editorState.manualFlashcardIds.filter(
+          (id) => id !== req.params.flashcardId
+        );
+
+      kitDocument.editorState.pinnedFlashcardIds =
+        kitDocument.editorState.pinnedFlashcardIds.filter(
+          (id) => id !== req.params.flashcardId
+        );
+
+      kitDocument.markModified("kit");
+      kitDocument.markModified("editorState");
+
+      await kitDocument.save();
+
+      return res.json({
+        success: true,
+        deleted_flashcard_id: deleted.id,
+      });
+    } catch (error) {
+      console.error("Delete flashcard error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Could not delete flashcard",
+      });
+    }
+  }
+);
+
+const UpdateCompanyBriefSchema = z.object({
+  summary: z.string().trim().min(1).optional(),
+  what_they_do: z.string().trim().min(1).optional(),
+});
+
+/**
+ * PATCH /api/kits/:id/company-brief
+ */
+router.patch(
+  "/:id/company-brief",
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const parsed = UpdateCompanyBriefSchema.safeParse(req.body);
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid company brief update",
+          errors: parsed.error.flatten(),
+        });
+      }
+
+      const kitDocument = await Kit.findOne({
+        _id: req.params.id,
+        userId: req.user!.id,
+      });
+
+      if (!kitDocument) {
+        return res.status(404).json({
+          success: false,
+          message: "Kit not found",
+        });
+      }
+
+      const kitData = kitDocument.kit as any;
+
+      Object.assign(
+        kitData.company_brief,
+        parsed.data
+      );
+
+      kitDocument.markModified("kit");
+
+      await kitDocument.save();
+
+      return res.json({
+        success: true,
+        company_brief: kitData.company_brief,
+      });
+    } catch (error) {
+      console.error("Update company brief error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Could not update company brief",
+      });
+    }
+  }
+);
+
 export default router;
