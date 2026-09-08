@@ -11,6 +11,8 @@ import { runPipeline } from "../pipeline/runPipeline";
 import { generateQuestionsForCategory } from "../pipeline/generateQuestions";
 import { buildSchedule } from "../pipeline/schedule";
 import { findUncoveredRequirements } from "../pipeline/coverage";
+import { crawlCompany } from "../pipeline/crawlCompany";
+import { generateCompanyBrief } from "../pipeline/generateCompanyBrief";
 
 const router = Router();
 
@@ -1029,6 +1031,392 @@ router.patch(
       return res.status(500).json({
         success: false,
         message: "Could not update company brief",
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/kits/:id/regenerate/company-brief
+ */
+router.post(
+  "/:id/regenerate/company-brief",
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const kitDocument = await Kit.findOne({
+        _id: req.params.id,
+        userId: req.user!.id,
+      });
+
+      if (!kitDocument) {
+        return res.status(404).json({
+          success: false,
+          message: "Kit not found",
+        });
+      }
+
+      const kitData = kitDocument.kit as any;
+
+      // Public API remains protected against private URLs.
+      const crawl = await crawlCompany(
+        kitData.source.company_url
+      );
+
+      const companyBrief =
+        await generateCompanyBrief(crawl);
+
+      // Replace ONLY company brief.
+      kitData.company_brief = companyBrief;
+
+      // Refresh research metadata.
+      kitData.source.pages_used = [
+        crawl.homepage.url,
+        ...crawl.pages.map((page) => page.url),
+      ];
+
+      kitData.source.researched_at =
+        new Date().toISOString();
+
+      kitDocument.markModified("kit");
+
+      await kitDocument.save();
+
+      return res.json({
+        success: true,
+        company_brief: kitData.company_brief,
+        pages_used: kitData.source.pages_used,
+      });
+    } catch (error) {
+      console.error(
+        "Regenerate company brief error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Could not regenerate company brief",
+      });
+    }
+  }
+);
+
+const RegenerateScheduleSchema = z.object({
+  days: z.number().int().min(1).max(60).optional(),
+});
+
+/**
+ * POST /api/kits/:id/regenerate/schedule
+ */
+router.post(
+  "/:id/regenerate/schedule",
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const parsed = RegenerateScheduleSchema.safeParse(
+        req.body ?? {}
+      );
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid schedule options",
+          errors: parsed.error.flatten(),
+        });
+      }
+
+      const kitDocument = await Kit.findOne({
+        _id: req.params.id,
+        userId: req.user!.id,
+      });
+
+      if (!kitDocument) {
+        return res.status(404).json({
+          success: false,
+          message: "Kit not found",
+        });
+      }
+
+      const kitData = kitDocument.kit as any;
+
+      const days =
+        parsed.data.days ??
+        kitData.schedule.days_available;
+
+      kitData.schedule = buildSchedule(
+        kitData.role.requirements,
+        kitData.questions,
+        days
+      );
+
+      kitDocument.input.days = days;
+
+      kitDocument.markModified("kit");
+      kitDocument.markModified("input");
+
+      await kitDocument.save();
+
+      return res.json({
+        success: true,
+        schedule: kitData.schedule,
+      });
+    } catch (error) {
+      console.error(
+        "Regenerate schedule error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Could not regenerate schedule",
+      });
+    }
+  }
+);
+
+const PracticeUpdateSchema = z.object({
+  confidence: z.number().int().min(1).max(3),
+  covered: z.boolean(),
+});
+
+/**
+ * PATCH /api/kits/:id/practice/:flashcardId
+ */
+router.patch(
+  "/:id/practice/:flashcardId",
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const parsed = PracticeUpdateSchema.safeParse(req.body);
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid practice update",
+          errors: parsed.error.flatten(),
+        });
+      }
+
+      const kitDocument = await Kit.findOne({
+        _id: req.params.id,
+        userId: req.user!.id,
+      });
+
+      if (!kitDocument) {
+        return res.status(404).json({
+          success: false,
+          message: "Kit not found",
+        });
+      }
+
+      const kitData = kitDocument.kit as any;
+
+      const flashcardExists = kitData.flashcards.some(
+        (f: any) =>
+          f.id === req.params.flashcardId
+      );
+
+      if (!flashcardExists) {
+        return res.status(404).json({
+          success: false,
+          message: "Flashcard not found",
+        });
+      }
+
+      let practiceItem =
+        kitDocument.practice.find(
+          (item) =>
+            item.flashcardId ===
+            req.params.flashcardId
+        );
+
+      if (!practiceItem) {
+        kitDocument.practice.push({
+          flashcardId:
+            req.params.flashcardId,
+          confidence:
+            parsed.data.confidence,
+          covered:
+            parsed.data.covered,
+          timesReviewed: 1,
+          lastPracticedAt:
+            new Date(),
+        });
+
+        practiceItem =
+          kitDocument.practice[
+            kitDocument.practice.length - 1
+          ];
+      } else {
+        practiceItem.confidence =
+          parsed.data.confidence;
+
+        practiceItem.covered =
+          parsed.data.covered;
+
+        practiceItem.timesReviewed += 1;
+
+        practiceItem.lastPracticedAt =
+          new Date();
+      }
+
+      kitDocument.markModified("practice");
+
+      await kitDocument.save();
+
+      return res.json({
+        success: true,
+        practice: practiceItem,
+      });
+    } catch (error) {
+      console.error(
+        "Practice update error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Could not update practice progress",
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/kits/:id/practice
+ *
+ * Returns flashcards ordered:
+ * 1. Never reviewed
+ * 2. Lowest confidence first
+ * 3. Uncovered before covered
+ */
+router.get(
+  "/:id/practice",
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const kitDocument = await Kit.findOne({
+        _id: req.params.id,
+        userId: req.user!.id,
+      });
+
+      if (!kitDocument) {
+        return res.status(404).json({
+          success: false,
+          message: "Kit not found",
+        });
+      }
+
+      const kitData = kitDocument.kit as any;
+
+      const practiceMap = new Map(
+        kitDocument.practice.map((item) => [
+          item.flashcardId,
+          item,
+        ])
+      );
+
+      const flashcards = kitData.flashcards.map(
+        (flashcard: any) => {
+          const progress = practiceMap.get(
+            flashcard.id
+          );
+
+          return {
+            ...flashcard,
+
+            practice: progress
+              ? {
+                  confidence:
+                    progress.confidence,
+                  covered:
+                    progress.covered,
+                  timesReviewed:
+                    progress.timesReviewed,
+                  lastPracticedAt:
+                    progress.lastPracticedAt,
+                }
+              : {
+                  confidence: 0,
+                  covered: false,
+                  timesReviewed: 0,
+                  lastPracticedAt: null,
+                },
+          };
+        }
+      );
+
+      flashcards.sort((a: any, b: any) => {
+        // Never reviewed first
+        if (
+          a.practice.timesReviewed === 0 &&
+          b.practice.timesReviewed > 0
+        ) {
+          return -1;
+        }
+
+        if (
+          b.practice.timesReviewed === 0 &&
+          a.practice.timesReviewed > 0
+        ) {
+          return 1;
+        }
+
+        // Least confidence first
+        if (
+          a.practice.confidence !==
+          b.practice.confidence
+        ) {
+          return (
+            a.practice.confidence -
+            b.practice.confidence
+          );
+        }
+
+        // Uncovered before covered
+        if (
+          a.practice.covered !==
+          b.practice.covered
+        ) {
+          return a.practice.covered ? 1 : -1;
+        }
+
+        return 0;
+      });
+
+      return res.json({
+        success: true,
+
+        stats: {
+          total: flashcards.length,
+
+          reviewed: flashcards.filter(
+            (f: any) =>
+              f.practice.timesReviewed > 0
+          ).length,
+
+          covered: flashcards.filter(
+            (f: any) =>
+              f.practice.covered
+          ).length,
+        },
+
+        flashcards,
+      });
+    } catch (error) {
+      console.error(
+        "Practice queue error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Could not load practice session",
       });
     }
   }

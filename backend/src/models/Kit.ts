@@ -31,6 +31,7 @@ export interface IKit extends Document {
   practice: Array<{
     flashcardId: string;
     confidence: number;
+    covered: boolean;
     timesReviewed: number;
     lastPracticedAt?: Date;
   }>;
@@ -51,6 +52,11 @@ const PracticeSchema = new Schema(
       min: 1,
       max: 3,
       default: 1,
+    },
+
+    covered: {
+      type: Boolean,
+      default: false,
     },
 
     timesReviewed: {
