@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { connectDatabase } from "./config/db";
 import authRoutes from "./routes/auth";
-
+import kitRoutes from "./routes/kits";
 dotenv.config();
 
 const app = express();
@@ -37,6 +37,9 @@ async function startServer() {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
+
+app.use("/api/auth", authRoutes);
+app.use("/api/kits", kitRoutes);
 
 startServer().catch((error) => {
   console.error("Failed to start server:", error);
