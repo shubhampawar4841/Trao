@@ -178,7 +178,7 @@ Map was benchmarked (`backend/src/cli/test-map.ts`) against Trao, Amazon Jobs, a
 ## Security
 
 - Passwords hashed with bcrypt (cost 12)
-- JWT in httpOnly cookie (`sameSite: lax`, `secure` in production)
+- JWT in httpOnly cookie (`sameSite: lax` locally; `sameSite: none` + `secure` in production for cross-origin Vercel)
 - Company crawl SSRF protection: rejects private / loopback hosts unless `ALLOW_PRIVATE_URLS=true` or evaluator `allowPrivateUrls`
 - HTML content-type checks and ~2 MB response size limits on crawl fetches
 - Failed subpages skipped and reported instead of failing the whole kit
@@ -256,7 +256,7 @@ npm run dev
 
 Health check: `GET /health`
 
-CORS is configured for `http://localhost:3000` with credentials.
+CORS allows `http://localhost:3000` and `FRONTEND_URL` with credentials.
 
 ### Main API surface
 
@@ -349,7 +349,7 @@ npx tsc --noEmit
 
 - Question generation can invent adjacent tech not in the JD; prompts can be tightened further
 - Company name is inferred from homepage title / URL and can be noisy on marketing sites
-- Backend CORS origin is hardcoded to `http://localhost:3000` for local development
+- Production requires `FRONTEND_URL` and `NODE_ENV=production` for cross-origin cookies
 - Full-site Firecrawl Crawl is intentionally unused (cost + determinism)
 - Interview research depends on public sources; some companies return `found: false` by design
 
@@ -362,8 +362,8 @@ No production host is configured in this repo. A typical split:
 1. **MongoDB Atlas** — set `MONGODB_URI`
 2. **Backend** — Node host (e.g. Render / Railway / Fly); run `npm start` from `backend/`
 3. **Frontend** — Next.js host (e.g. Vercel); set `NEXT_PUBLIC_API_URL` to the API origin
-4. Update CORS `origin` in `backend/src/server.ts` to the deployed frontend URL
-5. Set `NODE_ENV=production` so auth cookies use `secure: true`
+4. Set backend `FRONTEND_URL` to the deployed frontend origin
+5. Set `NODE_ENV=production` so auth cookies use `secure: true` and `sameSite: none`
 6. Provide `JWT_SECRET`, `GROQ_API_KEY`, `FIRECRAWL_API_KEY`
 
 The CLI evaluator can run anywhere Node + Groq + Firecrawl are available; it does not require MongoDB.

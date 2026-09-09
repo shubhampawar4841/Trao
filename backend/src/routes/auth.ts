@@ -6,6 +6,20 @@ import { requireAuth, type AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
+const isProduction =
+  process.env.NODE_ENV === "production";
+
+function authCookieOptions() {
+  return {
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    secure: isProduction,
+    sameSite: isProduction
+      ? ("none" as const)
+      : ("lax" as const),
+  };
+}
+
 function createToken(userId: string) {
   const secret = process.env.JWT_SECRET;
 
@@ -71,13 +85,7 @@ router.post("/register", async (req, res) => {
       user._id.toString()
     );
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure:
-        process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, authCookieOptions());
 
     return res.status(201).json({
       success: true,
@@ -145,13 +153,7 @@ router.post("/login", async (req, res) => {
       user._id.toString()
     );
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure:
-        process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, authCookieOptions());
 
     return res.json({
       success: true,
@@ -174,12 +176,7 @@ router.post("/login", async (req, res) => {
  * POST /api/auth/logout
  */
 router.post("/logout", (_req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure:
-      process.env.NODE_ENV === "production",
-  });
+  res.clearCookie("token", authCookieOptions());
 
   return res.json({
     success: true,
