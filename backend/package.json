@@ -2,10 +2,13 @@
   "name": "backend",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
-    "evaluate": "tsx src/cli/evaluate.ts"
+    "evaluate": "tsx src/cli/evaluate.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -33,6 +36,8 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.5.0",
     "tsx": "^4.23.13",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0"
   }
 }

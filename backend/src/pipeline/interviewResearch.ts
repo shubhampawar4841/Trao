@@ -26,6 +26,37 @@ interface SearchHit {
   source_type: string;
 }
 
+function normalizeSearchWebItem(item: {
+  url?: string;
+  title?: string;
+  description?: string;
+  metadata?: {
+    url?: string;
+    sourceURL?: string;
+    title?: string;
+    description?: string;
+  };
+}): { url: string; title: string; description: string } | null {
+  const url =
+    (typeof item.url === "string" && item.url) ||
+    item.metadata?.url ||
+    item.metadata?.sourceURL ||
+    "";
+
+  if (!url) {
+    return null;
+  }
+
+  return {
+    url,
+    title: item.title ?? item.metadata?.title ?? "",
+    description:
+      item.description ??
+      item.metadata?.description ??
+      "",
+  };
+}
+
 function normalize(value: string): string {
   return value
     .toLowerCase()
@@ -402,12 +433,13 @@ async function searchCandidates(
 
   const unique = new Map<string, SearchHit>();
 
-  for (const item of searchResult.web ?? []) {
-    if (!item?.url) continue;
+  for (const raw of searchResult.web ?? []) {
+    const item = normalizeSearchWebItem(raw);
+    if (!item) continue;
 
     const url = canonicalizeUrl(item.url);
-    const title = item.title ?? "";
-    const description = item.description ?? "";
+    const title = item.title;
+    const description = item.description;
 
     const snippetScore = scoreSnippetCandidate({
       companyName,

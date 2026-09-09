@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
 
-import { Kit } from "../models/Kit";
+import { Kit, type IKit } from "../models/Kit";
+
+type PracticeItem = IKit["practice"][number];
 import {
   requireAuth,
   type AuthRequest,
@@ -583,17 +585,17 @@ router.delete(
       // Remove state references
       kitDocument.editorState.editedQuestionIds =
         kitDocument.editorState.editedQuestionIds.filter(
-          (id) => id !== req.params.questionId
+          (id: string) => id !== req.params.questionId
         );
 
       kitDocument.editorState.manualQuestionIds =
         kitDocument.editorState.manualQuestionIds.filter(
-          (id) => id !== req.params.questionId
+          (id: string) => id !== req.params.questionId
         );
 
       kitDocument.editorState.pinnedQuestionIds =
         kitDocument.editorState.pinnedQuestionIds.filter(
-          (id) => id !== req.params.questionId
+          (id: string) => id !== req.params.questionId
         );
 
       // Recalculate coverage
@@ -942,17 +944,17 @@ router.delete(
 
       kitDocument.editorState.editedFlashcardIds =
         kitDocument.editorState.editedFlashcardIds.filter(
-          (id) => id !== req.params.flashcardId
+          (id: string) => id !== req.params.flashcardId
         );
 
       kitDocument.editorState.manualFlashcardIds =
         kitDocument.editorState.manualFlashcardIds.filter(
-          (id) => id !== req.params.flashcardId
+          (id: string) => id !== req.params.flashcardId
         );
 
       kitDocument.editorState.pinnedFlashcardIds =
         kitDocument.editorState.pinnedFlashcardIds.filter(
-          (id) => id !== req.params.flashcardId
+          (id: string) => id !== req.params.flashcardId
         );
 
       kitDocument.markModified("kit");
@@ -1228,7 +1230,7 @@ router.patch(
 
       let practiceItem =
         kitDocument.practice.find(
-          (item) =>
+          (item: PracticeItem) =>
             item.flashcardId ===
             req.params.flashcardId
         );
@@ -1313,8 +1315,8 @@ router.get(
 
       const kitData = kitDocument.kit as any;
 
-      const practiceMap = new Map(
-        kitDocument.practice.map((item) => [
+      const practiceMap = new Map<string, PracticeItem>(
+        kitDocument.practice.map((item: PracticeItem) => [
           item.flashcardId,
           item,
         ])
