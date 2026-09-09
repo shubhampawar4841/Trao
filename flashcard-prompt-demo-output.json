@@ -1,0 +1,422 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-09-09T18:21:53.683Z",
+  "kits": [
+    {
+      "id": "flashcard-prompt-demo",
+      "status": "ok",
+      "kit": {
+        "source": {
+          "company": "Trao",
+          "company_url": "https://www.trao.ai",
+          "role": "Software Engineer",
+          "location": "",
+          "jd_chars": 448,
+          "researched_at": "2026-09-09T18:21:53.674Z",
+          "pages_used": [
+            "https://www.trao.ai",
+            "https://www.trao.ai/",
+            "https://www.trao.ai/careers",
+            "https://www.jobaaj.com/company/trao-careers"
+          ]
+        },
+        "company_brief": {
+          "summary": "Trao is an AI research and development lab that embeds itself within organizations to study and rebuild their workflows with AI, aiming for 10× productivity gains and long‑term competitive advantage.",
+          "what_they_do": "Trao researches, designs, builds, and deploys autonomous AI systems for governments, enterprises, and mid‑market organizations. Its offerings include AI agents that execute end‑to‑end tasks, automation of multi‑step human processes, enterprise‑wide judgment layers, and AI‑native products built from scratch around new autonomous capabilities.",
+          "sources": [
+            "https://www.trao.ai/",
+            "https://www.trao.ai/careers"
+          ]
+        },
+        "role": {
+          "title": "Software Engineer",
+          "seniority": "",
+          "responsibilities": [],
+          "requirements": [
+            {
+              "id": "r1",
+              "text": "At least 1 year of full-stack experience",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r2",
+              "text": "Strong TypeScript and React skills",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r3",
+              "text": "Experience designing and consuming REST APIs",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r4",
+              "text": "Comfortable with PostgreSQL and basic data modeling",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r5",
+              "text": "Ability to write tests and debug production issues",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r6",
+              "text": "Bachelor's degree preferred",
+              "kind": "technical",
+              "priority": "nice"
+            },
+            {
+              "id": "r7",
+              "text": "Strong written communication and ownership mindset",
+              "kind": "behavioural",
+              "priority": "must"
+            }
+          ]
+        },
+        "questions": [
+          {
+            "id": "q1",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "technical",
+            "prompt": "Describe a project where you handled both front-end and back-end components. What was your role and how did you ensure smooth integration between the two layers?",
+            "answer_outline": "Explain project scope, responsibilities, communication with backend team, use of API contracts, versioning, automated tests, CI/CD pipelines, and monitoring for integration issues.",
+            "difficulty": 2
+          },
+          {
+            "id": "q2",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "technical",
+            "prompt": "Explain how you would structure a React component to handle complex state using TypeScript. Provide an example of type definitions you would use for props, state, and context.",
+            "answer_outline": "Discuss component design patterns (functional components, hooks), use of useState/useReducer, defining interfaces/types for props and state, leveraging generics for reusable components, and ensuring type safety across the component tree.",
+            "difficulty": 3
+          },
+          {
+            "id": "q3",
+            "requirement_ids": [
+              "r3"
+            ],
+            "category": "technical",
+            "prompt": "Walk through the steps you take to design a REST API endpoint for creating a new resource. How do you handle validation, error handling, and documentation?",
+            "answer_outline": "Outline request/response schema, validation middleware, error handling strategy (HTTP status codes, error payloads), logging, and API documentation tools like OpenAPI/Swagger.",
+            "difficulty": 2
+          },
+          {
+            "id": "q4",
+            "requirement_ids": [
+              "r4"
+            ],
+            "category": "technical",
+            "prompt": "Given a requirement to store user profiles with optional nested addresses, outline your PostgreSQL schema design and explain your data modeling choices.",
+            "answer_outline": "Describe tables (users, addresses), foreign keys, nullable fields, normalization vs denormalization, indexing strategy, and use of JSONB if appropriate.",
+            "difficulty": 2
+          },
+          {
+            "id": "q5",
+            "requirement_ids": [
+              "r5"
+            ],
+            "category": "technical",
+            "prompt": "Describe a time when you debugged a production issue that involved both front-end and back-end components. What tools and strategies did you use?",
+            "answer_outline": "Mention logging, monitoring (e.g., Sentry, New Relic), stack traces, reproducing in staging, using breakpoints, network inspection, and collaboration with ops teams.",
+            "difficulty": 3
+          },
+          {
+            "id": "q6",
+            "requirement_ids": [
+              "r2",
+              "r3"
+            ],
+            "category": "technical",
+            "prompt": "How would you implement authentication in a React/TypeScript app that consumes a REST API? Discuss token handling and secure storage.",
+            "answer_outline": "Explain JWT/OAuth flow, storing tokens (HTTP-only cookies vs localStorage), refresh tokens, TypeScript types for auth context, and protecting routes.",
+            "difficulty": 3
+          },
+          {
+            "id": "q7",
+            "requirement_ids": [
+              "r7"
+            ],
+            "category": "behavioural",
+            "prompt": "Describe a time when you had to write a technical document for a non-technical audience. How did you ensure clarity and demonstrate ownership of the content?",
+            "answer_outline": "- Context of the project and audience\n- Steps taken to simplify technical jargon\n- Methods used to verify understanding (e.g., feedback loops)\n- How ownership was shown (e.g., revising based on feedback, ensuring accuracy)",
+            "difficulty": 2
+          },
+          {
+            "id": "q8",
+            "requirement_ids": [
+              "r7"
+            ],
+            "category": "behavioural",
+            "prompt": "Tell me about a project where you took full ownership of a communication channel (such as weekly status emails or a project dashboard). What challenges did you face and how did you address them?",
+            "answer_outline": "- Description of the communication channel and its purpose\n- Specific challenges (e.g., stakeholder engagement, information overload)\n- Actions taken to improve clarity, frequency, or format\n- Outcomes and how ownership was maintained throughout the project",
+            "difficulty": 2
+          },
+          {
+            "id": "q9",
+            "requirement_ids": [
+              "r7"
+            ],
+            "category": "behavioural",
+            "prompt": "Give an example of a situation where you had to explain a complex AI system design to stakeholders with limited technical knowledge. How did you structure your communication and take ownership of the outcome?",
+            "answer_outline": "- Overview of the AI system and stakeholder group\n- Communication strategy (e.g., analogies, visuals, incremental explanations)\n- Steps taken to ensure understanding and gather feedback\n- Demonstration of ownership (e.g., iterating the explanation, following up on concerns)",
+            "difficulty": 3
+          },
+          {
+            "id": "q10",
+            "requirement_ids": [
+              "r1",
+              "r2",
+              "r3",
+              "r4",
+              "r5"
+            ],
+            "category": "system-design",
+            "prompt": "Design a full‑stack architecture for a task‑management web app that uses AI to suggest task priorities. The app should have a React frontend, a TypeScript backend exposing REST APIs, and store data in PostgreSQL. Discuss how you would structure the components, handle authentication, and ensure scalability.",
+            "answer_outline": "- Frontend: React SPA with TypeScript, component hierarchy, state management (e.g., Redux or Context), routing, UI library.  - Backend: Node/Express or NestJS in TypeScript, RESTful endpoints for tasks, projects, users, AI service integration.  - Authentication: JWT or OAuth2, secure cookie storage, role‑based access control.  - Data model: PostgreSQL tables for users, tenants, projects, tasks, AI suggestions; use foreign keys, indexes, and proper normalization.  - AI integration: separate microservice or serverless function that receives task data, returns priority scores; use async queues (e.g., Bull) to decouple.  - Scalability: stateless API servers behind load balancer, horizontal scaling, caching (Redis) for frequent queries, read replicas for PostgreSQL.  - Testing: unit tests for services, integration tests for API endpoints, end‑to‑end tests with Cypress.  - Debugging: structured logging (Winston), error tracking (Sentry), health checks, graceful shutdown.  - Deployment: Docker containers, CI/CD pipeline, blue/green or canary releases.",
+            "difficulty": 3
+          },
+          {
+            "id": "q11",
+            "requirement_ids": [
+              "r3",
+              "r4",
+              "r5"
+            ],
+            "category": "system-design",
+            "prompt": "You are building a multi‑tenant SaaS platform that allows each tenant to have its own set of projects and tasks. Design the REST API endpoints, the PostgreSQL data model, and explain how you would enforce tenant isolation and handle schema migrations.",
+            "answer_outline": "- API design: /tenants/{id}/projects, /tenants/{id}/tasks, CRUD operations, pagination, filtering.  - Authentication: tenant‑aware JWT, middleware to inject tenant context.  - Data model: tenants table, projects table with tenant_id FK, tasks table with project_id FK, shared indexes.  - Isolation: row‑level security (PostgreSQL RLS) or tenant_id filtering in queries.  - Schema migrations: use migration tool (e.g., Knex, TypeORM), versioned migrations, automated rollback, CI tests against migrations.  - Testing: unit tests for query builders, integration tests for tenant isolation, end‑to‑end tests for API.",
+            "difficulty": 2
+          },
+          {
+            "id": "q12",
+            "requirement_ids": [
+              "r2",
+              "r5"
+            ],
+            "category": "system-design",
+            "prompt": "Describe how you would design a real‑time notification system for the task‑management app using React on the frontend and TypeScript on the backend. Consider how to push updates to users and how to handle failures.",
+            "answer_outline": "- Frontend: WebSocket or long‑polling via Socket.io, React context to manage notification state, UI components for toast/alert.  - Backend: WebSocket server in TypeScript, publish/subscribe pattern, message broker (e.g., Redis Pub/Sub).  - Notification flow: backend emits events on task updates, frontend receives and updates UI.  - Failure handling: reconnection logic, exponential backoff, fallback to polling, graceful degradation.  - Security: authenticate WebSocket connections, verify tenant context.  - Testing: unit tests for event handlers, integration tests for WebSocket handshake, end‑to‑end tests for notification delivery.",
+            "difficulty": 2
+          },
+          {
+            "id": "q13",
+            "requirement_ids": [
+              "r5"
+            ],
+            "category": "system-design",
+            "prompt": "Explain how you would set up a debugging and monitoring strategy for the full‑stack application, including logging, error tracking, and automated tests.",
+            "answer_outline": "- Logging: structured logs with Winston/Log4js, include request IDs, environment tags.  - Error tracking: integrate Sentry or similar, capture stack traces, user context.  - Monitoring: Prometheus metrics, Grafana dashboards, health checks.  - Automated tests: unit tests (Jest), integration tests (Supertest), e2e tests (Cypress).  - CI pipeline: run tests, lint, build, deploy to staging, run smoke tests.  - Production debugging: enable hot‑reload of logs, use remote debugging tools, maintain a rollback strategy.",
+            "difficulty": 1
+          },
+          {
+            "id": "q14",
+            "requirement_ids": [
+              "r1",
+              "r7"
+            ],
+            "category": "company-fit",
+            "prompt": "Trao's mission is to embed AI systems within organizations to achieve 10× productivity gains. Can you describe how your experience with full-stack development (r1) and ownership mindset (r7) would enable you to contribute to this goal?",
+            "answer_outline": "• Leverage full-stack experience to build end-to-end solutions.\n• Demonstrate ownership by driving project from concept to deployment.\n• Align technical decisions with business impact and productivity metrics.",
+            "difficulty": 2
+          },
+          {
+            "id": "q15",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "company-fit",
+            "prompt": "Given Trao's focus on building autonomous AI agents that execute end-to-end tasks, how would your strong TypeScript and React skills (r2) help in creating user-facing components that interact with these agents?",
+            "answer_outline": "• Use TypeScript for type safety and maintainability.\n• Design reusable React components for agent UI.\n• Integrate with backend APIs and handle real-time updates.",
+            "difficulty": 2
+          },
+          {
+            "id": "q16",
+            "requirement_ids": [
+              "r3"
+            ],
+            "category": "company-fit",
+            "prompt": "Trao designs and consumes REST APIs to integrate AI services. Can you share an example where you designed a REST API (r3) that supported complex data flows, and how you ensured it met performance and security requirements?",
+            "answer_outline": "• Define clear resource endpoints and HTTP verbs.\n• Implement authentication/authorization (OAuth, JWT).\n• Optimize performance with pagination, caching, and indexing.\n• Write unit/integration tests for API reliability.",
+            "difficulty": 2
+          },
+          {
+            "id": "q17",
+            "requirement_ids": [
+              "r4"
+            ],
+            "category": "company-fit",
+            "prompt": "Data modeling is crucial for AI workflows. How has your experience with PostgreSQL and basic data modeling (r4) helped you structure data for AI training or inference pipelines?",
+            "answer_outline": "• Design normalized schemas for raw data ingestion.\n• Create materialized views or denormalized tables for fast inference.\n• Use indexes and constraints to ensure data integrity.\n• Plan for scalability and data versioning.",
+            "difficulty": 2
+          },
+          {
+            "id": "q18",
+            "requirement_ids": [
+              "r5",
+              "r7"
+            ],
+            "category": "company-fit",
+            "prompt": "Debugging production issues is part of delivering reliable AI systems. Describe a time when you identified and resolved a critical bug in a full-stack application (r5), and how you communicated the fix to stakeholders.",
+            "answer_outline": "• Reproduce the issue and isolate root cause.\n• Apply fix and run regression tests.\n• Deploy hotfix with monitoring.\n• Communicate status and impact to product and engineering teams.",
+            "difficulty": 2
+          }
+        ],
+        "flashcards": [
+          {
+            "id": "f1",
+            "front": "What does full‑stack development entail?",
+            "back": "Working on both front‑end (UI/UX, frameworks) and back‑end (APIs, databases, server logic).",
+            "requirement_ids": [
+              "r1"
+            ]
+          },
+          {
+            "id": "f2",
+            "front": "How would you demonstrate 1+ year of full‑stack experience in an interview?",
+            "back": "Show portfolio, describe projects, explain tech stack, highlight responsibilities.",
+            "requirement_ids": [
+              "r1"
+            ]
+          },
+          {
+            "id": "f3",
+            "front": "Why is TypeScript beneficial in React projects?",
+            "back": "Adds static typing, catches errors early, improves maintainability.",
+            "requirement_ids": [
+              "r2"
+            ]
+          },
+          {
+            "id": "f4",
+            "front": "How would you handle state management in a large React app?",
+            "back": "Use hooks, context, or libraries like Redux; keep state local when possible, lift state up.",
+            "requirement_ids": [
+              "r2"
+            ]
+          },
+          {
+            "id": "f5",
+            "front": "What are key principles when designing a REST API?",
+            "back": "Use resource‑oriented URLs, proper HTTP verbs, statelessness, consistent status codes.",
+            "requirement_ids": [
+              "r3"
+            ]
+          },
+          {
+            "id": "f6",
+            "front": "How do you consume a REST API in React?",
+            "back": "Use fetch/axios, handle async, manage loading/error states, possibly use hooks like useEffect.",
+            "requirement_ids": [
+              "r3"
+            ]
+          },
+          {
+            "id": "f7",
+            "front": "What is a primary key and why is it important?",
+            "back": "Unique identifier for rows; ensures data integrity, enables indexing.",
+            "requirement_ids": [
+              "r4"
+            ]
+          },
+          {
+            "id": "f8",
+            "front": "How would you design a simple table for users in PostgreSQL?",
+            "back": "Define columns (id serial primary key, email unique, password hash, created_at timestamp).",
+            "requirement_ids": [
+              "r4"
+            ]
+          },
+          {
+            "id": "f9",
+            "front": "What testing frameworks are common for TypeScript/React?",
+            "back": "Jest for unit tests, React Testing Library for component tests.",
+            "requirement_ids": [
+              "r5"
+            ]
+          },
+          {
+            "id": "f10",
+            "front": "How do you approach debugging a production issue?",
+            "back": "Reproduce locally, add logging, use error monitoring, isolate failing component, fix, test.",
+            "requirement_ids": [
+              "r5"
+            ]
+          },
+          {
+            "id": "f11",
+            "front": "Give an example of taking ownership of a project.",
+            "back": "Describe initiative, problem identification, solution implementation, communication.",
+            "requirement_ids": [
+              "r7"
+            ]
+          },
+          {
+            "id": "f12",
+            "front": "How do you ensure clear written communication in a remote team?",
+            "back": "Use concise emails, documentation, status updates, ask clarifying questions.",
+            "requirement_ids": [
+              "r7"
+            ]
+          }
+        ],
+        "schedule": {
+          "days_available": 3,
+          "days": [
+            {
+              "day": 1,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q2",
+                "q9",
+                "q3",
+                "q8",
+                "q14",
+                "q17"
+              ],
+              "minutes": 100
+            },
+            {
+              "day": 2,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q5",
+                "q10",
+                "q4",
+                "q11",
+                "q15",
+                "q18"
+              ],
+              "minutes": 100
+            },
+            {
+              "day": 3,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q6",
+                "q1",
+                "q7",
+                "q12",
+                "q16",
+                "q13"
+              ],
+              "minutes": 90
+            }
+          ]
+        },
+        "coverage": {
+          "uncovered_requirement_ids": [],
+          "passes": 1
+        }
+      },
+      "error": null
+    }
+  ]
+}
