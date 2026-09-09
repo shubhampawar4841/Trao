@@ -10,7 +10,7 @@ Given those inputs, Trao researches the company site and public interview discus
 - flashcards
 - deterministic study schedule
 - requirement coverage validation
-- practice mode with independent **confidence** and **covered** state
+- practice mode with confidence (1–3); rating a card marks it covered
 
 The mandatory Trao assessment entry point is the batch evaluator:
 
@@ -31,7 +31,7 @@ npm run evaluate -- --input cases.json --output kits.json
 | Questions | Edit, reorder, move category, regenerate by category; manual/edited items survive regen |
 | Flashcards | Edit / add cards for practice |
 | Schedule | Day-by-day plan with real question prompts (not raw IDs) |
-| Practice | One card at a time, reveal answer, mark covered, rate confidence |
+| Practice | One card at a time, reveal answer, rate confidence (auto-marks covered) |
 
 ---
 
@@ -167,7 +167,7 @@ Map was benchmarked (`backend/src/cli/test-map.ts`) against Trao, Amazon Jobs, a
 ## Practice mode
 
 - One flashcard at a time
-- Reveal answer, then independently set **covered** and **confidence** (1–3)
+- Reveal answer, then rate **confidence** (1–3); any rating marks the card **covered**
 - Progress persisted on the kit document
 - Next session order: never reviewed → lowest confidence → uncovered before covered
 
@@ -376,7 +376,7 @@ The CLI evaluator can run anywhere Node + Groq + Firecrawl are available; it doe
 4. Wait for generation → open **Overview** (brief + requirements + coverage)
 5. **Questions** — edit one question, regenerate a category, confirm edited/manual items remain
 6. **Schedule** — confirm day cards show prompts; try regenerate with a different day count
-7. **Practice** — reveal answer, toggle covered, rate confidence; reload and confirm low-confidence cards rise
+7. **Practice** — reveal answer, rate confidence (auto-covers); reload and confirm low-confidence cards rise
 8. From repo root, run:
 
 ```bash

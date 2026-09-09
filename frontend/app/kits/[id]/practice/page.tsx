@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 
@@ -30,6 +34,13 @@ interface PracticeResponse {
   flashcards: PracticeFlashcard[];
 }
 
+function confidenceLabel(confidence: number) {
+  if (confidence === 1) return "Needs work";
+  if (confidence === 2) return "Getting there";
+  if (confidence === 3) return "Confident";
+  return null;
+}
+
 export default function PracticePage() {
   const params = useParams();
   const router = useRouter();
@@ -51,9 +62,6 @@ export default function PracticePage() {
   const [revealed, setRevealed] =
     useState(false);
 
-  const [coveredDraft, setCoveredDraft] =
-    useState(false);
-
   const [loading, setLoading] =
     useState(true);
 
@@ -63,7 +71,18 @@ export default function PracticePage() {
   const [error, setError] =
     useState("");
 
+  const [sessionComplete, setSessionComplete] =
+    useState(false);
+
+  const [sessionRated, setSessionRated] =
+    useState(0);
+
   async function loadPractice() {
+    setLoading(true);
+    setError("");
+    setSessionComplete(false);
+    setSessionRated(0);
+
     try {
       const response =
         await api<PracticeResponse>(
@@ -89,98 +108,128 @@ export default function PracticePage() {
     loadPractice();
   }, [id]);
 
-  useEffect(() => {
-    const currentCard = cards[index];
+  const rateCard = useCallback(
+    async (confidence: number) => {
+      const card = cards[index];
 
-    if (currentCard) {
-      setCoveredDraft(
-        currentCard.practice.covered
-      );
-    }
-  }, [cards, index]);
-
-  async function rateCard(
-    confidence: number
-  ) {
-    const card = cards[index];
-
-    if (!card) return;
-
-    setSaving(true);
-    setError("");
-
-    try {
-      await api(
-        `/api/kits/${id}/practice/${card.id}`,
-        {
-          method: "PATCH",
-
-          body: JSON.stringify({
-            confidence,
-            covered: coveredDraft,
-          }),
-        }
-      );
-
-      const nextCards = [...cards];
-
-      nextCards[index] = {
-        ...card,
-
-        practice: {
-          ...card.practice,
-
-          confidence,
-
-          covered: coveredDraft,
-
-          timesReviewed:
-            card.practice.timesReviewed + 1,
-
-          lastPracticedAt:
-            new Date().toISOString(),
-        },
-      };
-
-      setCards(nextCards);
-
-      setStats((current) => ({
-        ...current,
-
-        reviewed:
-          card.practice.timesReviewed === 0
-            ? current.reviewed + 1
-            : current.reviewed,
-
-        covered:
-          coveredDraft &&
-          !card.practice.covered
-            ? current.covered + 1
-            : !coveredDraft &&
-                card.practice.covered
-              ? Math.max(
-                  0,
-                  current.covered - 1
-                )
-              : current.covered,
-      }));
-
-      if (index < cards.length - 1) {
-        setIndex(index + 1);
-        setRevealed(false);
-      } else {
-        await loadPractice();
+      if (!card || saving || sessionComplete) {
+        return;
       }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Could not save progress"
-      );
-    } finally {
-      setSaving(false);
+
+      setSaving(true);
+      setError("");
+
+      try {
+        await api(
+          `/api/kits/${id}/practice/${card.id}`,
+          {
+            method: "PATCH",
+
+            body: JSON.stringify({
+              confidence,
+              covered: true,
+            }),
+          }
+        );
+
+        const nextCards = [...cards];
+
+        nextCards[index] = {
+          ...card,
+
+          practice: {
+            ...card.practice,
+            confidence,
+            covered: true,
+            timesReviewed:
+              card.practice.timesReviewed + 1,
+            lastPracticedAt:
+              new Date().toISOString(),
+          },
+        };
+
+        setCards(nextCards);
+        setSessionRated((count) => count + 1);
+
+        setStats((current) => ({
+          ...current,
+
+          reviewed:
+            card.practice.timesReviewed === 0
+              ? current.reviewed + 1
+              : current.reviewed,
+
+          covered: !card.practice.covered
+            ? current.covered + 1
+            : current.covered,
+        }));
+
+        if (index < cards.length - 1) {
+          setIndex(index + 1);
+          setRevealed(false);
+        } else {
+          setSessionComplete(true);
+          setRevealed(false);
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Could not save progress"
+        );
+      } finally {
+        setSaving(false);
+      }
+    },
+    [cards, id, index, saving, sessionComplete]
+  );
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (loading || sessionComplete || saving) {
+        return;
+      }
+
+      if (
+        event.key === " " ||
+        event.key === "Enter"
+      ) {
+        if (!revealed) {
+          event.preventDefault();
+          setRevealed(true);
+        }
+        return;
+      }
+
+      if (!revealed) {
+        return;
+      }
+
+      if (event.key === "1") {
+        event.preventDefault();
+        void rateCard(1);
+      } else if (event.key === "2") {
+        event.preventDefault();
+        void rateCard(2);
+      } else if (event.key === "3") {
+        event.preventDefault();
+        void rateCard(3);
+      }
     }
-  }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () =>
+      window.removeEventListener(
+        "keydown",
+        onKeyDown
+      );
+  }, [
+    loading,
+    rateCard,
+    revealed,
+    saving,
+    sessionComplete,
+  ]);
 
   if (loading) {
     return (
@@ -212,27 +261,110 @@ export default function PracticePage() {
     );
   }
 
+  const coveredCount = cards.filter(
+    (item) => item.practice.covered
+  ).length;
+
+  const needsWorkCount = cards.filter(
+    (item) =>
+      !item.practice.covered ||
+      item.practice.confidence === 1
+  ).length;
+
+  const confidentCount = cards.filter(
+    (item) => item.practice.confidence === 3
+  ).length;
+
+  if (sessionComplete) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#080808] px-6 text-white">
+        <div className="w-full max-w-md text-center">
+          <div className="text-sm tracking-[0.18em] text-emerald-400">
+            SESSION COMPLETE
+          </div>
+
+          <h1 className="mt-4 text-3xl font-semibold tracking-tight">
+            Nice work.
+          </h1>
+
+          <p className="mt-3 text-sm text-zinc-500">
+            You rated {sessionRated} card
+            {sessionRated === 1 ? "" : "s"} this
+            round. Low-confidence cards will come
+            back first next time.
+          </p>
+
+          <div className="mt-10 grid grid-cols-3 gap-2">
+            <div className="rounded-xl border border-white/10 bg-[#101010] p-3">
+              <div className="text-[10px] text-zinc-600">
+                Covered
+              </div>
+              <div className="mt-2 text-lg font-medium">
+                {coveredCount}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-[#101010] p-3">
+              <div className="text-[10px] text-zinc-600">
+                Needs work
+              </div>
+              <div className="mt-2 text-lg font-medium text-amber-400">
+                {needsWorkCount}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-[#101010] p-3">
+              <div className="text-[10px] text-zinc-600">
+                Confident
+              </div>
+              <div className="mt-2 text-lg font-medium text-emerald-400">
+                {confidentCount}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => void loadPractice()}
+              className="w-full rounded-xl bg-white px-5 py-3.5 text-sm font-medium text-black transition hover:bg-zinc-200"
+            >
+              Practice again
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                router.push(`/kits/${id}`)
+              }
+              className="w-full rounded-xl border border-white/10 px-5 py-3.5 text-sm text-zinc-300 transition hover:bg-white/5"
+            >
+              Back to kit
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   const card = cards[index];
 
   const progress =
     ((index + 1) / cards.length) * 100;
 
-  const mastered = cards.filter(
-    (card) =>
-      card.practice.confidence === 3 &&
-      card.practice.covered
-  ).length;
+  const priorLabel = confidenceLabel(
+    card.practice.confidence
+  );
 
-  const needsReview = cards.filter(
-    (card) =>
-      card.practice.confidence <= 1 ||
-      !card.practice.covered
-  ).length;
+  const statusPill = !card.practice.covered
+    ? "Not practiced yet"
+    : priorLabel
+      ? `Covered · ${priorLabel}`
+      : "Covered";
 
   return (
-    <main className="min-h-screen bg-[#080808] text-white">
+    <main className="min-h-screen bg-[#080808] pb-36 text-white sm:pb-28">
 
-      {/* TOP */}
       <header className="border-b border-white/10">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
           <button
@@ -243,7 +375,9 @@ export default function PracticePage() {
             className="shrink-0 text-sm text-zinc-500 hover:text-white"
           >
             <span className="sm:hidden">←</span>
-            <span className="hidden sm:inline">← Back to kit</span>
+            <span className="hidden sm:inline">
+              ← Back to kit
+            </span>
           </button>
 
           <div className="truncate text-sm font-medium tracking-[0.18em] text-emerald-400">
@@ -258,40 +392,38 @@ export default function PracticePage() {
 
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
 
-        {/* STATS */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <div className="rounded-xl border border-white/10 bg-[#101010] p-3 sm:p-4">
             <div className="text-[10px] text-zinc-600 sm:text-xs">
-              Total cards
+              Covered
             </div>
 
             <div className="mt-2 text-lg font-medium sm:text-xl">
-              {stats.total}
+              {stats.covered}
             </div>
           </div>
 
           <div className="rounded-xl border border-white/10 bg-[#101010] p-3 sm:p-4">
             <div className="text-[10px] text-zinc-600 sm:text-xs">
-              Mastered
+              Needs work
+            </div>
+
+            <div className="mt-2 text-lg font-medium text-amber-400 sm:text-xl">
+              {needsWorkCount}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-[#101010] p-3 sm:p-4">
+            <div className="text-[10px] text-zinc-600 sm:text-xs">
+              Confident
             </div>
 
             <div className="mt-2 text-lg font-medium text-emerald-400 sm:text-xl">
-              {mastered}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-white/10 bg-[#101010] p-3 sm:p-4">
-            <div className="text-[10px] text-zinc-600 sm:text-xs">
-              Needs review
-            </div>
-
-            <div className="mt-2 text-lg font-medium sm:text-xl">
-              {needsReview}
+              {confidentCount}
             </div>
           </div>
         </div>
 
-        {/* PROGRESS */}
         <div className="mt-8 h-1 overflow-hidden rounded-full bg-white/5">
           <div
             className="h-full bg-emerald-400 transition-all duration-300"
@@ -307,29 +439,20 @@ export default function PracticePage() {
           </div>
         )}
 
-        {/* CARD */}
-        <section className="mt-10 min-h-[320px] rounded-3xl border border-white/10 bg-[#101010] p-5 sm:min-h-[380px] sm:p-8 lg:p-10">
-
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-zinc-600">
-              {card.id}
+        <section className="mt-10 min-h-[280px] rounded-3xl border border-white/10 bg-[#101010] p-5 sm:min-h-[340px] sm:p-8 lg:p-10">
+          <div className="flex justify-start">
+            <span
+              className={`rounded-full px-2.5 py-1 text-[10px] tracking-wide ${
+                card.practice.covered
+                  ? "bg-emerald-500/10 text-emerald-400"
+                  : "bg-white/5 text-zinc-500"
+              }`}
+            >
+              {statusPill}
             </span>
-
-            <div className="flex gap-2">
-              {card.requirement_ids.map(
-                (requirementId) => (
-                  <span
-                    key={requirementId}
-                    className="rounded-md bg-white/5 px-2 py-1 text-[10px] text-zinc-500"
-                  >
-                    {requirementId}
-                  </span>
-                )
-              )}
-            </div>
           </div>
 
-          <div className="mt-12">
+          <div className="mt-10">
             <div className="text-xs uppercase tracking-[0.16em] text-zinc-600">
               Question
             </div>
@@ -342,9 +465,7 @@ export default function PracticePage() {
           {!revealed ? (
             <button
               type="button"
-              onClick={() =>
-                setRevealed(true)
-              }
+              onClick={() => setRevealed(true)}
               className="mt-14 w-full rounded-xl border border-white/10 bg-white/[0.03] px-5 py-4 text-sm text-zinc-300 transition hover:bg-white/[0.06]"
             >
               Reveal answer
@@ -361,58 +482,21 @@ export default function PracticePage() {
             </div>
           )}
         </section>
+      </div>
 
-        {/* CONFIDENCE */}
-        {revealed && (
-          <section className="mt-7">
-            <div className="mb-6 flex items-center justify-between rounded-2xl border border-white/10 bg-[#101010] p-4">
-              <div>
-                <div className="text-sm font-medium text-zinc-200">
-                  {coveredDraft
-                    ? "Covered"
-                    : "Mark as covered"}
-                </div>
-
-                <p className="mt-1 text-xs text-zinc-600">
-                  You feel prepared enough to move this card out of priority review.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setCoveredDraft(
-                    !coveredDraft
-                  )
-                }
-                className={`relative h-7 w-12 rounded-full transition ${
-                  coveredDraft
-                    ? "bg-emerald-500"
-                    : "bg-white/10"
-                }`}
-              >
-                <span
-                  className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${
-                    coveredDraft
-                      ? "left-6"
-                      : "left-1"
-                  }`}
-                />
-              </button>
-            </div>
-
+      {revealed && (
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[#080808]/95 px-4 py-4 backdrop-blur-md sm:px-6">
+          <div className="mx-auto max-w-3xl">
             <div className="mb-3 text-center text-xs text-zinc-600">
               How confident are you?
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <button
                 type="button"
                 disabled={saving}
-                onClick={() =>
-                  rateCard(1)
-                }
-                className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-4 text-sm text-red-400 transition hover:bg-red-500/10 disabled:opacity-50"
+                onClick={() => void rateCard(1)}
+                className="rounded-xl border border-red-500/20 bg-red-500/5 px-2 py-3.5 text-xs text-red-400 transition hover:bg-red-500/10 disabled:opacity-50 sm:px-4 sm:text-sm"
               >
                 1 · Needs work
               </button>
@@ -420,10 +504,8 @@ export default function PracticePage() {
               <button
                 type="button"
                 disabled={saving}
-                onClick={() =>
-                  rateCard(2)
-                }
-                className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-4 text-sm text-amber-400 transition hover:bg-amber-500/10 disabled:opacity-50"
+                onClick={() => void rateCard(2)}
+                className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-2 py-3.5 text-xs text-amber-400 transition hover:bg-amber-500/10 disabled:opacity-50 sm:px-4 sm:text-sm"
               >
                 2 · Getting there
               </button>
@@ -431,22 +513,20 @@ export default function PracticePage() {
               <button
                 type="button"
                 disabled={saving}
-                onClick={() =>
-                  rateCard(3)
-                }
-                className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-4 text-sm text-emerald-400 transition hover:bg-emerald-500/10 disabled:opacity-50"
+                onClick={() => void rateCard(3)}
+                className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-2 py-3.5 text-xs text-emerald-400 transition hover:bg-emerald-500/10 disabled:opacity-50 sm:px-4 sm:text-sm"
               >
                 3 · Confident
               </button>
             </div>
-          </section>
-        )}
 
-        <p className="mt-8 text-center text-xs text-zinc-700">
-          Low-confidence cards are prioritized
-          in your next practice session.
-        </p>
-      </div>
+            <p className="mt-3 text-center text-xs text-zinc-700">
+              Low-confidence cards come back first
+              next session.
+            </p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
