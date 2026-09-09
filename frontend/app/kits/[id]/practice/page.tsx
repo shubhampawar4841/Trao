@@ -51,6 +51,9 @@ export default function PracticePage() {
   const [revealed, setRevealed] =
     useState(false);
 
+  const [coveredDraft, setCoveredDraft] =
+    useState(false);
+
   const [loading, setLoading] =
     useState(true);
 
@@ -86,6 +89,16 @@ export default function PracticePage() {
     loadPractice();
   }, [id]);
 
+  useEffect(() => {
+    const currentCard = cards[index];
+
+    if (currentCard) {
+      setCoveredDraft(
+        currentCard.practice.covered
+      );
+    }
+  }, [cards, index]);
+
   async function rateCard(
     confidence: number
   ) {
@@ -104,7 +117,7 @@ export default function PracticePage() {
 
           body: JSON.stringify({
             confidence,
-            covered: confidence >= 2,
+            covered: coveredDraft,
           }),
         }
       );
@@ -119,7 +132,7 @@ export default function PracticePage() {
 
           confidence,
 
-          covered: confidence >= 2,
+          covered: coveredDraft,
 
           timesReviewed:
             card.practice.timesReviewed + 1,
@@ -140,16 +153,16 @@ export default function PracticePage() {
             : current.reviewed,
 
         covered:
-          confidence >= 2 &&
+          coveredDraft &&
           !card.practice.covered
             ? current.covered + 1
-            : confidence < 2 &&
-              card.practice.covered
-            ? Math.max(
-                0,
-                current.covered - 1
-              )
-            : current.covered,
+            : !coveredDraft &&
+                card.practice.covered
+              ? Math.max(
+                  0,
+                  current.covered - 1
+                )
+              : current.covered,
       }));
 
       if (index < cards.length - 1) {
@@ -204,6 +217,18 @@ export default function PracticePage() {
   const progress =
     ((index + 1) / cards.length) * 100;
 
+  const mastered = cards.filter(
+    (card) =>
+      card.practice.confidence === 3 &&
+      card.practice.covered
+  ).length;
+
+  const needsReview = cards.filter(
+    (card) =>
+      card.practice.confidence <= 1 ||
+      !card.practice.covered
+  ).length;
+
   return (
     <main className="min-h-screen bg-[#080808] text-white">
 
@@ -236,7 +261,7 @@ export default function PracticePage() {
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-xl border border-white/10 bg-[#101010] p-4">
             <div className="text-xs text-zinc-600">
-              Cards
+              Total cards
             </div>
 
             <div className="mt-2 text-xl font-medium">
@@ -246,21 +271,21 @@ export default function PracticePage() {
 
           <div className="rounded-xl border border-white/10 bg-[#101010] p-4">
             <div className="text-xs text-zinc-600">
-              Reviewed
+              Mastered
             </div>
 
-            <div className="mt-2 text-xl font-medium">
-              {stats.reviewed}
+            <div className="mt-2 text-xl font-medium text-emerald-400">
+              {mastered}
             </div>
           </div>
 
           <div className="rounded-xl border border-white/10 bg-[#101010] p-4">
             <div className="text-xs text-zinc-600">
-              Covered
+              Needs review
             </div>
 
-            <div className="mt-2 text-xl font-medium text-emerald-400">
-              {stats.covered}
+            <div className="mt-2 text-xl font-medium">
+              {needsReview}
             </div>
           </div>
         </div>
@@ -339,11 +364,47 @@ export default function PracticePage() {
         {/* CONFIDENCE */}
         {revealed && (
           <section className="mt-7">
+            <div className="mb-6 flex items-center justify-between rounded-2xl border border-white/10 bg-[#101010] p-4">
+              <div>
+                <div className="text-sm font-medium text-zinc-200">
+                  {coveredDraft
+                    ? "Covered"
+                    : "Mark as covered"}
+                </div>
+
+                <p className="mt-1 text-xs text-zinc-600">
+                  You feel prepared enough to move this card out of priority review.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setCoveredDraft(
+                    !coveredDraft
+                  )
+                }
+                className={`relative h-7 w-12 rounded-full transition ${
+                  coveredDraft
+                    ? "bg-emerald-500"
+                    : "bg-white/10"
+                }`}
+              >
+                <span
+                  className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${
+                    coveredDraft
+                      ? "left-6"
+                      : "left-1"
+                  }`}
+                />
+              </button>
+            </div>
+
             <div className="mb-3 text-center text-xs text-zinc-600">
               How confident are you?
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <button
                 type="button"
                 disabled={saving}
@@ -363,7 +424,7 @@ export default function PracticePage() {
                 }
                 className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-4 text-sm text-amber-400 transition hover:bg-amber-500/10 disabled:opacity-50"
               >
-                2 · Almost
+                2 · Getting there
               </button>
 
               <button
