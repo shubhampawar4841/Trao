@@ -54,7 +54,24 @@ RULES:
 - Keep the front concise and question-like.
 - Keep the back useful but brief.
 - Create roughly 1-2 flashcards per important requirement.
-- Return JSON only.
+
+Flashcards should help the candidate prepare for the interview.
+
+Prefer cards that:
+- explain or apply an actual requirement
+- review an important technical/domain concept
+- prepare a useful behavioural example
+
+Avoid low-value cards that only ask the candidate to repeat metadata from the job description, such as:
+- exact years of experience required
+- degree requirements
+- job location
+- whether a skill is required
+
+Every flashcard must stay grounded in the extracted requirement_ids.
+Do not invent requirements or candidate experience.
+
+Return JSON only.
 
 Expected shape:
 
