@@ -83,6 +83,68 @@ describe(
     );
 
     it(
+      "normalizes American spelling and unknown kinds",
+      async () => {
+        createMock.mockResolvedValueOnce({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  title: "Software Engineer",
+                  seniority: "",
+                  responsibilities: [],
+                  requirements: [
+                    {
+                      text: "Strong communication",
+                      kind: "behavioral",
+                      priority: "required",
+                    },
+                    {
+                      text: "Python experience",
+                      kind: "coding",
+                      priority: "preferred",
+                    },
+                    {
+                      text: "Fintech domain knowledge",
+                      kind: "industry",
+                      priority: "must",
+                    },
+                  ],
+                }),
+              },
+            },
+          ],
+        });
+
+        const result = await extractRequirements(
+          "Strong communication. Python. Fintech."
+        );
+
+        expect(createMock).toHaveBeenCalledTimes(1);
+        expect(result.requirements).toEqual([
+          {
+            id: "r1",
+            text: "Strong communication",
+            kind: "behavioural",
+            priority: "must",
+          },
+          {
+            id: "r2",
+            text: "Python experience",
+            kind: "technical",
+            priority: "nice",
+          },
+          {
+            id: "r3",
+            text: "Fintech domain knowledge",
+            kind: "domain",
+            priority: "must",
+          },
+        ]);
+      }
+    );
+
+    it(
       "rejects incomplete structured output after retry",
       async () => {
         const incomplete = JSON.stringify({

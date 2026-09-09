@@ -3,6 +3,17 @@ import { groq, GROQ_MODEL } from "../utils/groq";
 import { withRetry } from "../utils/retry";
 import type { Requirement } from "../schemas/kit.schema";
 
+const RequirementKindSchema = z.enum([
+  "technical",
+  "behavioural",
+  "domain",
+]);
+
+const RequirementPrioritySchema = z.enum([
+  "must",
+  "nice",
+]);
+
 const ExtractionSchema = z.object({
   title: z.string(),
   seniority: z.string(),
@@ -10,8 +21,8 @@ const ExtractionSchema = z.object({
   requirements: z.array(
     z.object({
       text: z.string(),
-      kind: z.enum(["technical", "behavioural", "domain"]),
-      priority: z.enum(["must", "nice"]),
+      kind: RequirementKindSchema,
+      priority: RequirementPrioritySchema,
     })
   ),
 });
@@ -27,6 +38,100 @@ const MAX_STRUCTURED_OUTPUT_ATTEMPTS = 2;
 
 /** Soft cap for extreme JDs; normal postings stay intact. */
 const MAX_JD_CHARS = 20000;
+
+/** Keep extraction JSON small enough for free-tier completion limits. */
+const MAX_REQUIREMENTS = 12;
+
+function normalizeKind(
+  value: unknown
+): "technical" | "behavioural" | "domain" {
+  const raw = String(value ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (
+    raw === "behavioural" ||
+    raw === "behavioral" ||
+    raw.includes("behav") ||
+    raw.includes("soft") ||
+    raw.includes("leadership") ||
+    raw.includes("communication") ||
+    raw.includes("culture")
+  ) {
+    return "behavioural";
+  }
+
+  if (
+    raw === "domain" ||
+    raw.includes("business") ||
+    raw.includes("industry") ||
+    raw.includes("product")
+  ) {
+    return "domain";
+  }
+
+  // Default unknown / technical aliases here.
+  return "technical";
+}
+
+function normalizePriority(
+  value: unknown
+): "must" | "nice" {
+  const raw = String(value ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (
+    raw === "nice" ||
+    raw.includes("prefer") ||
+    raw.includes("optional") ||
+    raw.includes("bonus") ||
+    raw.includes("good-to-have") ||
+    raw.includes("good to have")
+  ) {
+    return "nice";
+  }
+
+  return "must";
+}
+
+function normalizeExtractionPayload(
+  value: unknown
+): unknown {
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  const payload = value as Record<string, unknown>;
+
+  if (!Array.isArray(payload.requirements)) {
+    return payload;
+  }
+
+  return {
+    ...payload,
+    requirements: payload.requirements
+      .filter(
+        (item): item is Record<string, unknown> =>
+          !!item && typeof item === "object"
+      )
+      .map((item) => ({
+        ...item,
+        text:
+          typeof item.text === "string"
+            ? item.text.trim()
+            : item.text,
+        kind: normalizeKind(item.kind),
+        priority: normalizePriority(item.priority),
+      }))
+      .filter(
+        (item) =>
+          typeof item.text === "string" &&
+          item.text.length > 0
+      )
+      .slice(0, MAX_REQUIREMENTS),
+  };
+}
 
 export async function extractRequirements(
   jd: string
@@ -58,16 +163,20 @@ IMPORTANT RULES:
 - Use ONLY information explicitly present in the job description.
 - Do NOT invent skills, experience, responsibilities, seniority, or requirements.
 - If the job description is very short, return fewer requirements.
+- Return at most ${MAX_REQUIREMENTS} requirements. Prefer must-haves.
 - "must" means clearly required, expected, mandatory, or core to the role.
 - "nice" means preferred, bonus, optional, good-to-have, or similar.
 - Do not turn generic company marketing text into job requirements.
 - Preserve the meaning of each requirement.
 - Keep requirements atomic: one requirement per item.
 
-Requirement kinds:
-- technical: languages, frameworks, databases, architecture, engineering skills
-- behavioural: communication, mentoring, ownership, collaboration, leadership
-- domain: industry/business/domain knowledge
+Requirement kinds — use EXACTLY one of these spellings:
+- "technical": languages, frameworks, databases, architecture, engineering skills
+- "behavioural": communication, mentoring, ownership, collaboration, leadership
+- "domain": industry/business/domain knowledge
+
+Never use "behavioral", "soft-skill", "other", or any other kind value.
+priority must be exactly "must" or "nice".
 
 Return JSON only in this exact shape:
 
@@ -97,7 +206,7 @@ ${jdForModel}
           ],
 
           temperature: 0.1,
-          max_completion_tokens: 2000,
+          max_completion_tokens: 2500,
 
           response_format: {
             type: "json_object",
@@ -124,8 +233,9 @@ ${jdForModel}
         );
       }
 
-      const parsed =
-        ExtractionSchema.parse(parsedJson);
+      const parsed = ExtractionSchema.parse(
+        normalizeExtractionPayload(parsedJson)
+      );
 
       const requirements: Requirement[] =
         parsed.requirements.map(
