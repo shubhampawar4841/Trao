@@ -1,0 +1,123 @@
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
+
+const { createMock } = vi.hoisted(() => ({
+  createMock: vi.fn(),
+}));
+
+vi.mock("../utils/groq", () => ({
+  GROQ_MODEL: "test-model",
+
+  groq: {
+    chat: {
+      completions: {
+        create: createMock,
+      },
+    },
+  },
+}));
+
+import { extractRequirements } from "./extractRequirements";
+
+describe(
+  "extractRequirements structured output handling",
+  () => {
+    beforeEach(() => {
+      createMock.mockReset();
+    });
+
+    it(
+      "retries when model returns malformed JSON",
+      async () => {
+        createMock
+          .mockResolvedValueOnce({
+            choices: [
+              {
+                message: {
+                  content: "this is not json",
+                },
+              },
+            ],
+          })
+          .mockResolvedValueOnce({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    title: "Software Engineer",
+                    seniority: "",
+                    responsibilities: [],
+                    requirements: [
+                      {
+                        text: "Experience with Python",
+                        kind: "technical",
+                        priority: "must",
+                      },
+                    ],
+                  }),
+                },
+              },
+            ],
+          });
+
+        const result = await extractRequirements(
+          "Experience with Python required."
+        );
+
+        expect(createMock).toHaveBeenCalledTimes(2);
+
+        expect(result.requirements).toEqual([
+          {
+            id: "r1",
+            text: "Experience with Python",
+            kind: "technical",
+            priority: "must",
+          },
+        ]);
+      }
+    );
+
+    it(
+      "rejects incomplete structured output after retry",
+      async () => {
+        const incomplete = JSON.stringify({
+          title: "Software Engineer",
+          // seniority missing
+          responsibilities: [],
+          requirements: [],
+        });
+
+        createMock
+          .mockResolvedValueOnce({
+            choices: [
+              {
+                message: {
+                  content: incomplete,
+                },
+              },
+            ],
+          })
+          .mockResolvedValueOnce({
+            choices: [
+              {
+                message: {
+                  content: incomplete,
+                },
+              },
+            ],
+          });
+
+        await expect(
+          extractRequirements("Software Engineer")
+        ).rejects.toThrow();
+
+        expect(createMock).toHaveBeenCalledTimes(2);
+      }
+    );
+  }
+);

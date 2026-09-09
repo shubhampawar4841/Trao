@@ -23,17 +23,27 @@ export interface ExtractedRole {
   requirements: Requirement[];
 }
 
+const MAX_STRUCTURED_OUTPUT_ATTEMPTS = 2;
+
 export async function extractRequirements(
   jd: string
 ): Promise<ExtractedRole> {
-  const completion = await withRetry(() =>
-    groq.chat.completions.create({
-      model: GROQ_MODEL,
+  let lastError: unknown;
 
-      messages: [
-        {
-          role: "system",
-          content: `
+  for (
+    let attempt = 1;
+    attempt <= MAX_STRUCTURED_OUTPUT_ATTEMPTS;
+    attempt++
+  ) {
+    try {
+      const completion = await withRetry(() =>
+        groq.chat.completions.create({
+          model: GROQ_MODEL,
+
+          messages: [
+            {
+              role: "system",
+              content: `
 You extract structured information from job descriptions.
 
 IMPORTANT RULES:
@@ -65,55 +75,91 @@ Return JSON only in this exact shape:
     }
   ]
 }
-        `.trim(),
-        },
+              `.trim(),
+            },
 
-        {
-          role: "user",
-          content: `
+            {
+              role: "user",
+              content: `
 JOB DESCRIPTION:
 
 ${jd}
-        `.trim(),
-        },
-      ],
+              `.trim(),
+            },
+          ],
 
-      temperature: 0.1,
-      response_format: {
-        type: "json_object",
-      },
-    })
-  );
+          temperature: 0.1,
 
-  const content = completion.choices[0]?.message?.content;
+          response_format: {
+            type: "json_object",
+          },
+        })
+      );
 
-  if (!content) {
-    throw new Error("Groq returned an empty requirement extraction");
+      const content =
+        completion.choices[0]?.message?.content;
+
+      if (!content) {
+        throw new Error(
+          "Groq returned an empty requirement extraction"
+        );
+      }
+
+      let parsedJson: unknown;
+
+      try {
+        parsedJson = JSON.parse(content);
+      } catch {
+        throw new Error(
+          "Groq returned invalid JSON"
+        );
+      }
+
+      const parsed =
+        ExtractionSchema.parse(parsedJson);
+
+      const requirements: Requirement[] =
+        parsed.requirements.map(
+          (requirement, index) => ({
+            id: `r${index + 1}`,
+            text: requirement.text,
+            kind: requirement.kind,
+            priority: requirement.priority,
+          })
+        );
+
+      return {
+        title: parsed.title,
+        seniority: parsed.seniority,
+        responsibilities: parsed.responsibilities,
+        requirements,
+      };
+    } catch (error) {
+      lastError = error;
+
+      const malformedOutput =
+        error instanceof z.ZodError ||
+        (error instanceof Error &&
+          [
+            "Groq returned invalid JSON",
+            "Groq returned an empty requirement extraction",
+          ].includes(error.message));
+
+      // Provider/network errors are already
+      // handled by withRetry().
+      // Only retry malformed structured output here.
+      if (
+        !malformedOutput ||
+        attempt === MAX_STRUCTURED_OUTPUT_ATTEMPTS
+      ) {
+        throw error;
+      }
+
+      console.warn(
+        `Invalid structured requirement output. Retrying (${attempt}/${MAX_STRUCTURED_OUTPUT_ATTEMPTS})`
+      );
+    }
   }
 
-  let parsedJson: unknown;
-
-  try {
-    parsedJson = JSON.parse(content);
-  } catch {
-    throw new Error("Groq returned invalid JSON");
-  }
-
-  const parsed = ExtractionSchema.parse(parsedJson);
-
-  const requirements: Requirement[] = parsed.requirements.map(
-    (requirement, index) => ({
-      id: `r${index + 1}`,
-      text: requirement.text,
-      kind: requirement.kind,
-      priority: requirement.priority,
-    })
-  );
-
-  return {
-    title: parsed.title,
-    seniority: parsed.seniority,
-    responsibilities: parsed.responsibilities,
-    requirements,
-  };
+  throw lastError;
 }
