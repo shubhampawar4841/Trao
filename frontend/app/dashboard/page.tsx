@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import {
+  fetchCurrentUser,
+  type AuthUser,
+} from "@/lib/auth";
 
 interface KitListItem {
   _id: string;
@@ -26,16 +30,11 @@ interface KitListItem {
   updatedAt: string;
 }
 
-interface User {
-  id: string;
-  email: string;
-}
-
 export default function DashboardPage() {
   const router = useRouter();
 
   const [user, setUser] =
-    useState<User | null>(null);
+    useState<AuthUser | null>(null);
 
   const [kits, setKits] =
     useState<KitListItem[]>([]);
@@ -49,20 +48,19 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadDashboard() {
       try {
-        const [meResponse, kitsResponse] =
-          await Promise.all([
-            api<{
-              success: boolean;
-              user: User;
-            }>("/api/auth/me"),
+        const user = await fetchCurrentUser();
 
-            api<{
-              success: boolean;
-              kits: KitListItem[];
-            }>("/api/kits"),
-          ]);
+        if (!user) {
+          router.replace("/");
+          return;
+        }
 
-        setUser(meResponse.user);
+        const kitsResponse = await api<{
+          success: boolean;
+          kits: KitListItem[];
+        }>("/api/kits");
+
+        setUser(user);
         setKits(kitsResponse.kits);
       } catch {
         router.replace("/");
@@ -71,7 +69,7 @@ export default function DashboardPage() {
       }
     }
 
-    loadDashboard();
+    void loadDashboard();
   }, [router]);
 
   async function handleLogout() {

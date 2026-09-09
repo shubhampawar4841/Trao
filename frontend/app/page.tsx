@@ -1,13 +1,21 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import {
+  FormEvent,
+  useEffect,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { fetchCurrentUser } from "@/lib/auth";
 
 type Mode = "login" | "register";
 
 export default function HomePage() {
   const router = useRouter();
+
+  const [checkingSession, setCheckingSession] =
+    useState(true);
 
   const [mode, setMode] =
     useState<Mode>("login");
@@ -23,6 +31,21 @@ export default function HomePage() {
 
   const [error, setError] =
     useState("");
+
+  useEffect(() => {
+    async function checkSession() {
+      const user = await fetchCurrentUser();
+
+      if (user) {
+        router.replace("/dashboard");
+        return;
+      }
+
+      setCheckingSession(false);
+    }
+
+    void checkSession();
+  }, [router]);
 
   async function handleSubmit(
     event: FormEvent
@@ -59,6 +82,14 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (checkingSession) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#080808] text-zinc-500">
+        Checking session...
+      </main>
+    );
   }
 
   return (
@@ -133,9 +164,10 @@ export default function HomePage() {
               <div className="mb-6 grid grid-cols-2 rounded-xl bg-black p-1">
                 <button
                   type="button"
-                  onClick={() =>
-                    setMode("login")
-                  }
+                  onClick={() => {
+                    setMode("login");
+                    setError("");
+                  }}
                   className={`rounded-lg px-4 py-2.5 text-sm transition ${
                     mode === "login"
                       ? "bg-zinc-800 text-white"
@@ -147,9 +179,10 @@ export default function HomePage() {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setMode("register")
-                  }
+                  onClick={() => {
+                    setMode("register");
+                    setError("");
+                  }}
                   className={`rounded-lg px-4 py-2.5 text-sm transition ${
                     mode === "register"
                       ? "bg-zinc-800 text-white"
@@ -172,6 +205,7 @@ export default function HomePage() {
                   <input
                     type="email"
                     required
+                    autoComplete="email"
                     value={email}
                     onChange={(e) =>
                       setEmail(e.target.value)
@@ -190,6 +224,11 @@ export default function HomePage() {
                     type="password"
                     required
                     minLength={8}
+                    autoComplete={
+                      mode === "login"
+                        ? "current-password"
+                        : "new-password"
+                    }
                     value={password}
                     onChange={(e) =>
                       setPassword(e.target.value)

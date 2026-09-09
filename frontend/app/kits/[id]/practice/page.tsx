@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { fetchCurrentUser } from "@/lib/auth";
 
 interface PracticeFlashcard {
   id: string;
@@ -94,6 +95,13 @@ export default function PracticePage() {
     });
 
     try {
+      const user = await fetchCurrentUser();
+
+      if (!user) {
+        router.replace("/");
+        return;
+      }
+
       const response =
         await api<PracticeResponse>(
           `/api/kits/${id}/practice`
@@ -104,11 +112,24 @@ export default function PracticePage() {
       setIndex(0);
       setRevealed(false);
     } catch (err) {
-      setError(
+      const message =
         err instanceof Error
           ? err.message
-          : "Could not load practice session"
-      );
+          : "Could not load practice session";
+
+      if (
+        message
+          .toLowerCase()
+          .includes("authentication") ||
+        message
+          .toLowerCase()
+          .includes("session")
+      ) {
+        router.replace("/");
+        return;
+      }
+
+      setError(message);
     } finally {
       setLoading(false);
     }

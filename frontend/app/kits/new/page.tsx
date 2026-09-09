@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { fetchCurrentUser } from "@/lib/auth";
 
 const generationSteps = [
   "Extracting role requirements",
@@ -116,6 +117,24 @@ export default function NewKitPage() {
 
   const [reusedExisting, setReusedExisting] =
     useState(false);
+
+  const [checkingAuth, setCheckingAuth] =
+    useState(true);
+
+  useEffect(() => {
+    async function guard() {
+      const user = await fetchCurrentUser();
+
+      if (!user) {
+        router.replace("/");
+        return;
+      }
+
+      setCheckingAuth(false);
+    }
+
+    void guard();
+  }, [router]);
 
   useEffect(() => {
     if (!loading) {
@@ -502,6 +521,14 @@ export default function NewKitPage() {
 
       setLoading(false);
     }
+  }
+
+  if (checkingAuth) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#080808] text-zinc-500">
+        Checking session...
+      </main>
+    );
   }
 
   if (

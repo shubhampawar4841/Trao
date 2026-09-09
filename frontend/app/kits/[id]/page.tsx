@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { fetchCurrentUser } from "@/lib/auth";
 
 type Tab =
   | "overview"
@@ -181,6 +182,13 @@ export default function KitPage() {
 
   async function loadKit() {
     try {
+      const user = await fetchCurrentUser();
+
+      if (!user) {
+        router.replace("/");
+        return;
+      }
+
       const response = await api<{
         success: boolean;
         kit: KitDocument;
@@ -188,11 +196,24 @@ export default function KitPage() {
 
       setDocument(response.kit);
     } catch (err) {
-      setError(
+      const message =
         err instanceof Error
           ? err.message
-          : "Could not load kit"
-      );
+          : "Could not load kit";
+
+      if (
+        message
+          .toLowerCase()
+          .includes("authentication") ||
+        message
+          .toLowerCase()
+          .includes("session")
+      ) {
+        router.replace("/");
+        return;
+      }
+
+      setError(message);
     } finally {
       setLoading(false);
     }
