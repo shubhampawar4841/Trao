@@ -34,6 +34,12 @@ interface PracticeResponse {
   flashcards: PracticeFlashcard[];
 }
 
+interface SessionRatings {
+  needsWork: number;
+  gettingThere: number;
+  confident: number;
+}
+
 function confidenceLabel(confidence: number) {
   if (confidence === 1) return "Needs work";
   if (confidence === 2) return "Getting there";
@@ -47,15 +53,11 @@ export default function PracticePage() {
 
   const id = params.id as string;
 
+  // Frozen for the whole session after loadPractice().
+  // Only reloaded when the user clicks "Practice again".
   const [cards, setCards] = useState<
     PracticeFlashcard[]
   >([]);
-
-  const [stats, setStats] = useState({
-    total: 0,
-    reviewed: 0,
-    covered: 0,
-  });
 
   const [index, setIndex] = useState(0);
 
@@ -74,14 +76,22 @@ export default function PracticePage() {
   const [sessionComplete, setSessionComplete] =
     useState(false);
 
-  const [sessionRated, setSessionRated] =
-    useState(0);
+  const [sessionRatings, setSessionRatings] =
+    useState<SessionRatings>({
+      needsWork: 0,
+      gettingThere: 0,
+      confident: 0,
+    });
 
   async function loadPractice() {
     setLoading(true);
     setError("");
     setSessionComplete(false);
-    setSessionRated(0);
+    setSessionRatings({
+      needsWork: 0,
+      gettingThere: 0,
+      confident: 0,
+    });
 
     try {
       const response =
@@ -89,8 +99,8 @@ export default function PracticePage() {
           `/api/kits/${id}/practice`
         );
 
+      // Freeze this ordered queue for the session.
       setCards(response.flashcards);
-      setStats(response.stats);
       setIndex(0);
       setRevealed(false);
     } catch (err) {
@@ -148,20 +158,19 @@ export default function PracticePage() {
           },
         };
 
+        // Local update only — do not re-fetch / re-sort mid-session.
         setCards(nextCards);
-        setSessionRated((count) => count + 1);
 
-        setStats((current) => ({
-          ...current,
-
-          reviewed:
-            card.practice.timesReviewed === 0
-              ? current.reviewed + 1
-              : current.reviewed,
-
-          covered: !card.practice.covered
-            ? current.covered + 1
-            : current.covered,
+        setSessionRatings((current) => ({
+          needsWork:
+            current.needsWork +
+            (confidence === 1 ? 1 : 0),
+          gettingThere:
+            current.gettingThere +
+            (confidence === 2 ? 1 : 0),
+          confident:
+            current.confident +
+            (confidence === 3 ? 1 : 0),
         }));
 
         if (index < cards.length - 1) {
@@ -261,65 +270,76 @@ export default function PracticePage() {
     );
   }
 
+  // Covered/uncovered and confidence stay separate.
   const coveredCount = cards.filter(
     (item) => item.practice.covered
   ).length;
 
   const needsWorkCount = cards.filter(
-    (item) =>
-      !item.practice.covered ||
-      item.practice.confidence === 1
+    (item) => item.practice.confidence === 1
   ).length;
 
   const confidentCount = cards.filter(
     (item) => item.practice.confidence === 3
   ).length;
 
+  const sessionReviewed =
+    sessionRatings.needsWork +
+    sessionRatings.gettingThere +
+    sessionRatings.confident;
+
   if (sessionComplete) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#080808] px-6 text-white">
         <div className="w-full max-w-md text-center">
           <div className="text-sm tracking-[0.18em] text-emerald-400">
-            SESSION COMPLETE
+            PRACTICE COMPLETE
           </div>
 
           <h1 className="mt-4 text-3xl font-semibold tracking-tight">
-            Nice work.
+            Practice complete
           </h1>
 
           <p className="mt-3 text-sm text-zinc-500">
-            You rated {sessionRated} card
-            {sessionRated === 1 ? "" : "s"} this
-            round. Low-confidence cards will come
-            back first next time.
+            Low-confidence cards come back first
+            next session.
           </p>
 
-          <div className="mt-10 grid grid-cols-3 gap-2">
-            <div className="rounded-xl border border-white/10 bg-[#101010] p-3">
-              <div className="text-[10px] text-zinc-600">
-                Covered
-              </div>
-              <div className="mt-2 text-lg font-medium">
-                {coveredCount}
-              </div>
+          <div className="mt-10 space-y-3 text-left">
+            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-sm">
+              <span className="text-zinc-500">
+                Reviewed
+              </span>
+              <span className="font-medium">
+                {sessionReviewed}
+              </span>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-[#101010] p-3">
-              <div className="text-[10px] text-zinc-600">
+            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-sm">
+              <span className="text-red-400/90">
                 Needs work
-              </div>
-              <div className="mt-2 text-lg font-medium text-amber-400">
-                {needsWorkCount}
-              </div>
+              </span>
+              <span className="font-medium">
+                {sessionRatings.needsWork}
+              </span>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-[#101010] p-3">
-              <div className="text-[10px] text-zinc-600">
+            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-sm">
+              <span className="text-amber-400/90">
+                Getting there
+              </span>
+              <span className="font-medium">
+                {sessionRatings.gettingThere}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-sm">
+              <span className="text-emerald-400">
                 Confident
-              </div>
-              <div className="mt-2 text-lg font-medium text-emerald-400">
-                {confidentCount}
-              </div>
+              </span>
+              <span className="font-medium">
+                {sessionRatings.confident}
+              </span>
             </div>
           </div>
 
@@ -357,7 +377,7 @@ export default function PracticePage() {
   );
 
   const statusPill = !card.practice.covered
-    ? "Not practiced yet"
+    ? "Not practiced"
     : priorLabel
       ? `Covered · ${priorLabel}`
       : "Covered";
@@ -399,7 +419,7 @@ export default function PracticePage() {
             </div>
 
             <div className="mt-2 text-lg font-medium sm:text-xl">
-              {stats.covered}
+              {coveredCount} / {cards.length}
             </div>
           </div>
 
@@ -408,7 +428,7 @@ export default function PracticePage() {
               Needs work
             </div>
 
-            <div className="mt-2 text-lg font-medium text-amber-400 sm:text-xl">
+            <div className="mt-2 text-lg font-medium text-red-400 sm:text-xl">
               {needsWorkCount}
             </div>
           </div>

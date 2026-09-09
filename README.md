@@ -168,8 +168,10 @@ Map was benchmarked (`backend/src/cli/test-map.ts`) against Trao, Amazon Jobs, a
 
 - One flashcard at a time
 - Reveal answer, then rate **confidence** (1–3); any rating marks the card **covered**
-- Progress persisted on the kit document
+- Covered/uncovered and confidence stay separate (unpracticed ≠ needs work)
+- Session freezes the priority queue; only **Practice again** reloads + re-sorts
 - Next session order: never reviewed → lowest confidence → uncovered before covered
+- Progress persisted on the kit document
 
 ---
 
