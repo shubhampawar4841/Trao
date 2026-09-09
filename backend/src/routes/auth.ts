@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User } from "../models/User";
@@ -6,18 +6,33 @@ import { requireAuth, type AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
-const isProduction =
-  process.env.NODE_ENV === "production";
+function isHttpsRequest(req: Request): boolean {
+  const forwarded = req.headers["x-forwarded-proto"];
+  const proto =
+    typeof forwarded === "string"
+      ? forwarded.split(",")[0]?.trim()
+      : Array.isArray(forwarded)
+        ? forwarded[0]
+        : undefined;
 
-function authCookieOptions() {
+  return req.secure || proto === "https";
+}
+
+/**
+ * First-party cookies via the Next.js /api proxy.
+ * sameSite:lax is enough; secure only when the browser
+ * request is HTTPS (production). Avoids broken local cookies
+ * when NODE_ENV=production in .env.
+ */
+function authCookieOptions(req: Request) {
+  const secure = isHttpsRequest(req);
+
   return {
     httpOnly: true,
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    secure: isProduction,
-    sameSite: isProduction
-      ? ("none" as const)
-      : ("lax" as const),
+    secure,
+    sameSite: "lax" as const,
   };
 }
 
@@ -86,7 +101,7 @@ router.post("/register", async (req, res) => {
       user._id.toString()
     );
 
-    res.cookie("token", token, authCookieOptions());
+    res.cookie("token", token, authCookieOptions(req));
 
     return res.status(201).json({
       success: true,
@@ -154,7 +169,7 @@ router.post("/login", async (req, res) => {
       user._id.toString()
     );
 
-    res.cookie("token", token, authCookieOptions());
+    res.cookie("token", token, authCookieOptions(req));
 
     return res.json({
       success: true,
@@ -176,8 +191,8 @@ router.post("/login", async (req, res) => {
 /**
  * POST /api/auth/logout
  */
-router.post("/logout", (_req, res) => {
-  res.clearCookie("token", authCookieOptions());
+router.post("/logout", (req: Request, res: Response) => {
+  res.clearCookie("token", authCookieOptions(req));
 
   return res.json({
     success: true,
@@ -185,30 +200,29 @@ router.post("/logout", (_req, res) => {
 });
 
 router.get(
-    "/me",
-    requireAuth,
-    async (req: AuthRequest, res) => {
-      const user = await User.findById(req.user!.id).select(
-        "_id email createdAt"
-      );
-  
-      if (!user) {
-        return res.status(401).json({
-          success: false,
-          message: "User no longer exists",
-        });
-      }
-  
-      return res.json({
-        success: true,
-        user: {
-          id: user._id,
-          email: user.email,
-          createdAt: user.createdAt,
-        },
+  "/me",
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    const user = await User.findById(req.user!.id).select(
+      "_id email createdAt"
+    );
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User no longer exists",
       });
     }
-  );
+
+    return res.json({
+      success: true,
+      user: {
+        id: user._id,
+        email: user.email,
+        createdAt: user.createdAt,
+      },
+    });
+  }
+);
 
 export default router;
-

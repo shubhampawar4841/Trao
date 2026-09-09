@@ -10,6 +10,10 @@ dotenv.config();
 
 const app = express();
 
+// Needed on Vercel / reverse proxies so secure cookies
+// can detect HTTPS via x-forwarded-proto.
+app.set("trust proxy", 1);
+
 const allowedOrigins = [
   "http://localhost:3000",
   process.env.FRONTEND_URL,

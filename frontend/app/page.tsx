@@ -72,7 +72,10 @@ export default function HomePage() {
         }
       );
 
-      router.push("/dashboard");
+      // Full navigation so the new cookie is
+      // definitely available for /dashboard auth.
+      window.location.assign("/dashboard");
+      return;
     } catch (err) {
       setError(
         err instanceof Error

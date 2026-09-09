@@ -178,7 +178,7 @@ Map was benchmarked (`backend/src/cli/test-map.ts`) against Trao, Amazon Jobs, a
 ## Security
 
 - Passwords hashed with bcrypt (cost 12)
-- JWT in httpOnly cookie (`sameSite: lax` locally; `sameSite: none` + `secure` in production for cross-origin Vercel)
+- JWT in httpOnly cookie on the **frontend** origin via Next.js `/api` rewrite (first-party `sameSite: lax`; `secure` on HTTPS)
 - Company crawl SSRF protection: rejects private / loopback hosts unless `ALLOW_PRIVATE_URLS=true` or evaluator `allowPrivateUrls`
 - HTML content-type checks and ~2 MB response size limits on crawl fetches
 - Failed subpages skipped and reported instead of failing the whole kit
@@ -256,7 +256,7 @@ npm run dev
 
 Health check: `GET /health`
 
-CORS allows `http://localhost:3000` and `FRONTEND_URL` with credentials.
+CORS allows `http://localhost:3000` and `FRONTEND_URL` with credentials (direct API access). The Next.js app proxies `/api/*` to the backend so browser auth is same-origin.
 
 ### Main API surface
 
@@ -349,7 +349,7 @@ npx tsc --noEmit
 
 - Question generation can invent adjacent tech not in the JD; prompts can be tightened further
 - Company name is inferred from homepage title / URL and can be noisy on marketing sites
-- Production requires `FRONTEND_URL` and `NODE_ENV=production` for cross-origin cookies
+- Production auth relies on Next.js `/api` rewrite + `BACKEND_URL` (avoid cross-site cookies between two Vercel apps)
 - Full-site Firecrawl Crawl is intentionally unused (cost + determinism)
 - Interview research depends on public sources; some companies return `found: false` by design
 
@@ -361,9 +361,9 @@ No production host is configured in this repo. A typical split:
 
 1. **MongoDB Atlas** — set `MONGODB_URI`
 2. **Backend** — Node host (e.g. Render / Railway / Fly); run `npm start` from `backend/`
-3. **Frontend** — Next.js host (e.g. Vercel); set `NEXT_PUBLIC_API_URL` to the API origin
-4. Set backend `FRONTEND_URL` to the deployed frontend origin
-5. Set `NODE_ENV=production` so auth cookies use `secure: true` and `sameSite: none`
+3. **Frontend** — Next.js host (e.g. Vercel); set **server** env `BACKEND_URL` to the API origin (do **not** set `NEXT_PUBLIC_API_URL` for browser calls — use the `/api` rewrite so cookies stay first-party)
+4. Set backend `FRONTEND_URL` to the deployed frontend origin (CORS for any direct calls)
+5. Auth cookies use `sameSite: lax` through the frontend proxy; `secure` when the request is HTTPS
 6. Provide `JWT_SECRET`, `GROQ_API_KEY`, `FIRECRAWL_API_KEY`
 
 The CLI evaluator can run anywhere Node + Groq + Firecrawl are available; it does not require MongoDB.
