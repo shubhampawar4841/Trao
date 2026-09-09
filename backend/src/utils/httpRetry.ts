@@ -1,3 +1,5 @@
+import axios from "axios";
+
 export async function withHttpRetry<T>(
   operation: () => Promise<T>,
   maxAttempts = 3
@@ -11,32 +13,30 @@ export async function withHttpRetry<T>(
   ) {
     try {
       return await operation();
-    } catch (error: any) {
+    } catch (error) {
       lastError = error;
 
+      if (!axios.isAxiosError(error)) {
+        throw error;
+      }
+
       const status =
-        error?.response?.status ??
-        error?.status;
+        error.response?.status;
 
-      const code = error?.code;
+      const code = error.code;
 
-      const retryableStatus = [
-        429,
-        500,
-        502,
-        503,
-        504,
-      ].includes(status);
-
-      const retryableNetwork = [
-        "ECONNRESET",
-        "ETIMEDOUT",
-        "ECONNABORTED",
-      ].includes(code);
+      const retryable =
+        status === 429 ||
+        status === 500 ||
+        status === 502 ||
+        status === 503 ||
+        status === 504 ||
+        code === "ECONNRESET" ||
+        code === "ETIMEDOUT" ||
+        code === "ECONNABORTED";
 
       if (
-        (!retryableStatus &&
-          !retryableNetwork) ||
+        !retryable ||
         attempt === maxAttempts
       ) {
         throw error;
@@ -44,10 +44,13 @@ export async function withHttpRetry<T>(
 
       let waitMs =
         750 *
-        Math.pow(2, attempt - 1);
+        Math.pow(
+          2,
+          attempt - 1
+        );
 
       const retryAfter =
-        error?.response?.headers?.[
+        error.response?.headers?.[
           "retry-after"
         ];
 
@@ -66,13 +69,15 @@ export async function withHttpRetry<T>(
       }
 
       console.warn(
-        `HTTP request failed temporarily. Retrying in ${Math.ceil(
-          waitMs / 1000
-        )}s... (${attempt}/${maxAttempts})`
+        `HTTP request failed. Retrying in ${waitMs}ms (${attempt}/${maxAttempts})`
       );
 
-      await new Promise((resolve) =>
-        setTimeout(resolve, waitMs)
+      await new Promise(
+        (resolve) =>
+          setTimeout(
+            resolve,
+            waitMs
+          )
       );
     }
   }

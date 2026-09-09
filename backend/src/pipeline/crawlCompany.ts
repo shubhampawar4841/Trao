@@ -26,6 +26,13 @@ const MAX_PAGE_BYTES = 2 * 1024 * 1024;
 const MAX_PAGE_TEXT = 20_000;
 const USER_AGENT = "TraoInterviewPrepBot";
 
+function sleep(ms: number) {
+  return new Promise(
+    (resolve) =>
+      setTimeout(resolve, ms)
+  );
+}
+
 function isPrivateIp(ip: string): boolean {
   if (net.isIPv4(ip)) {
     return (
@@ -457,10 +464,11 @@ export async function crawlCompany(
     }
 
     try {
-      const page = await fetchPage(
-        link.url,
-        link.score
-      );
+      const page =
+        await fetchPage(
+          link.url,
+          link.score
+        );
 
       pages.push(page);
     } catch (error) {
@@ -471,6 +479,9 @@ export async function crawlCompany(
             ? error.message
             : "Unknown retrieval error",
       });
+    } finally {
+      // Be polite to company sites.
+      await sleep(300);
     }
   }
 

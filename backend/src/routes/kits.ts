@@ -36,6 +36,68 @@ const CreateKitSchema = z.object({
     .max(60),
 });
 
+type CreateKitInput = z.infer<
+  typeof CreateKitSchema
+>;
+
+async function generateAndSaveKit(
+  userId: string,
+  input: CreateKitInput
+) {
+  const generatedKit =
+    await runPipeline({
+      jd: input.jd,
+      company_url: input.company_url,
+      days: input.days,
+    });
+
+  return Kit.create({
+    userId,
+
+    input: {
+      jd: input.jd,
+      companyUrl:
+        input.company_url,
+      days: input.days,
+    },
+
+    kit: generatedKit,
+
+    status: "completed",
+
+    editorState: {
+      editedQuestionIds: [],
+      pinnedQuestionIds: [],
+      manualQuestionIds: [],
+
+      editedFlashcardIds: [],
+      pinnedFlashcardIds: [],
+      manualFlashcardIds: [],
+    },
+
+    practice: [],
+  });
+}
+
+const BatchCaseSchema =
+  CreateKitSchema.extend({
+    id: z
+      .string()
+      .trim()
+      .min(1)
+      .max(100),
+  });
+
+const BatchCreateSchema = z.object({
+  cases: z
+    .array(BatchCaseSchema)
+    .min(1)
+    .max(
+      10,
+      "Maximum 10 roles per batch"
+    ),
+});
+
 /**
  * POST /api/kits
  *
@@ -67,39 +129,15 @@ router.post(
         `Generating kit for user ${req.user!.id}`
       );
 
-      const generatedKit =
-        await runPipeline({
-          jd,
-          company_url,
-          days,
-        });
-
       const savedKit =
-        await Kit.create({
-          userId: req.user!.id,
-
-          input: {
+        await generateAndSaveKit(
+          req.user!.id,
+          {
             jd,
-            companyUrl: company_url,
+            company_url,
             days,
-          },
-
-          kit: generatedKit,
-
-          status: "completed",
-
-          editorState: {
-            editedQuestionIds: [],
-            pinnedQuestionIds: [],
-            manualQuestionIds: [],
-
-            editedFlashcardIds: [],
-            pinnedFlashcardIds: [],
-            manualFlashcardIds: [],
-          },
-
-          practice: [],
-        });
+          }
+        );
 
       return res.status(201).json({
         success: true,
@@ -125,6 +163,141 @@ router.post(
             : "Could not generate interview kit",
       });
     }
+  }
+);
+
+/**
+ * POST /api/kits/batch
+ *
+ * Generate multiple interview kits.
+ *
+ * Cases run sequentially to avoid
+ * overwhelming free-tier LLM/scraping
+ * rate limits.
+ *
+ * One failed case does not abort
+ * the rest of the batch.
+ */
+router.post(
+  "/batch",
+  requireAuth,
+  async (
+    req: AuthRequest,
+    res
+  ) => {
+    const parsed =
+      BatchCreateSchema.safeParse(
+        req.body
+      );
+
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Invalid batch input",
+          errors:
+            parsed.error.flatten(),
+        });
+    }
+
+    const cases =
+      parsed.data.cases;
+
+    const ids = cases.map(
+      (item) => item.id
+    );
+
+    if (
+      new Set(ids).size !==
+      ids.length
+    ) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Every batch case must have a unique id",
+        });
+    }
+
+    const results: Array<{
+      id: string;
+      status: "ok" | "failed";
+      kitId: string | null;
+      error: {
+        code?: string;
+        message: string;
+      } | null;
+    }> = [];
+
+    for (const item of cases) {
+      try {
+        console.log(
+          `Batch: generating ${item.id} for user ${req.user!.id}`
+        );
+
+        const savedKit =
+          await generateAndSaveKit(
+            req.user!.id,
+            {
+              jd: item.jd,
+              company_url:
+                item.company_url,
+              days: item.days,
+            }
+          );
+
+        results.push({
+          id: item.id,
+          status: "ok",
+
+          kitId:
+            savedKit._id.toString(),
+
+          error: null,
+        });
+      } catch (error) {
+        console.error(
+          `Batch case ${item.id} failed:`,
+          error
+        );
+
+        results.push({
+          id: item.id,
+          status: "failed",
+          kitId: null,
+
+          error: {
+            message:
+              error instanceof Error
+                ? error.message
+                : "Could not generate interview kit",
+          },
+        });
+      }
+    }
+
+    const successful =
+      results.filter(
+        (result) =>
+          result.status === "ok"
+      ).length;
+
+    return res.json({
+      success: true,
+
+      summary: {
+        total: results.length,
+        successful,
+        failed:
+          results.length -
+          successful,
+      },
+
+      results,
+    });
   }
 );
 

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "frontend-role",
+    "jd": "We are hiring a frontend engineer. Strong React and TypeScript experience required.",
+    "company_url": "https://www.trao.ai",
+    "days": 3
+  },
+  {
+    "id": "backend-role",
+    "jd": "We are hiring a backend engineer. Node.js and API development experience required.",
+    "company_url": "https://www.trao.ai",
+    "days": 4
+  }
+]
