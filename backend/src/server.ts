@@ -12,7 +12,7 @@ const app = express();
 app.use(
   cors({
     origin: "http://localhost:3000",
-    origins: ["https://trao-two.vercel.app"],
+    origins: ["https://trao-frontend-tau.vercel.app"],
     credentials: true,
   })
 );
