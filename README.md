@@ -1,6 +1,16 @@
 # Trao Interview Prep
 
-Trao generates a structured **interview preparation kit** from a job description and company website: requirements, company brief, practice questions, flashcards, and a multi-day study schedule.
+AI interview preparation kits from a job description, company URL, and days available.
+
+Given those inputs, Trao researches the company site and public interview discussions, then generates a structured kit:
+
+- company brief
+- extracted role requirements
+- categorized interview questions
+- flashcards
+- deterministic study schedule
+- requirement coverage validation
+- practice mode with independent **confidence** and **covered** state
 
 The mandatory Trao assessment entry point is the batch evaluator:
 
@@ -10,108 +20,274 @@ npm run evaluate -- --input cases.json --output kits.json
 
 ---
 
-## Repository structure
+## Screens / features
 
-```text
-traq/
-├── package.json              # Root: npm run evaluate
-├── cases.json                # Sample evaluation cases
-├── kits.json                 # Evaluator output (generated)
-├── README.md
-├── backend/
-│   ├── package.json
-│   ├── .env                  # Local secrets (not committed)
-│   └── src/
-│       ├── server.ts         # Express API (health + Mongo)
-│       ├── config/db.ts
-│       ├── cli/
-│       │   ├── evaluate.ts   # Batch evaluator (required)
-│       │   ├── test-pipeline.ts
-│       │   ├── test-run-pipeline.ts
-│       │   └── ...           # Stage-level test scripts
-│       ├── pipeline/
-│       │   ├── runPipeline.ts
-│       │   ├── extractRequirements.ts
-│       │   ├── crawlCompany.ts
-│       │   ├── generateCompanyBrief.ts
-│       │   ├── generateQuestions.ts
-│       │   ├── ensureCoverage.ts
-│       │   ├── generateFlashcards.ts
-│       │   ├── schedule.ts
-│       │   ├── coverage.ts
-│       │   └── interviewResearch.ts
-│       ├── schemas/kit.schema.ts
-│       └── utils/
-│           ├── groq.ts
-│           ├── firecrawl.ts
-│           └── retry.ts
-└── frontend/                 # Next.js app (starter; not wired yet)
-```
+| Screen | What it does |
+|--------|----------------|
+| Auth | Register / login with httpOnly JWT cookies |
+| Dashboard | List saved kits |
+| New kit | Submit JD + company URL + days; run the full pipeline |
+| Overview | Company brief, requirements, coverage status |
+| Questions | Edit, reorder, move category, regenerate by category; manual/edited items survive regen |
+| Flashcards | Edit / add cards for practice |
+| Schedule | Day-by-day plan with real question prompts (not raw IDs) |
+| Practice | One card at a time, reveal answer, mark covered, rate confidence |
 
 ---
 
-## Prerequisites
+## Architecture
 
-- Node.js 18+
-- MongoDB (only required for the HTTP API server)
-- [Groq](https://console.groq.com/) API key
-- [Firecrawl](https://www.firecrawl.dev/) API key (used for optional interview research paths)
+```text
+┌─────────────────┐     cookies + REST      ┌──────────────────────┐
+│  Next.js (UI)   │ ───────────────────────▶│  Express API         │
+│  TypeScript     │◀─────────────────────── │  TypeScript + Zod    │
+│  Tailwind       │                         └──────────┬───────────┘
+└─────────────────┘                                    │
+                                                       ▼
+                                            ┌──────────────────────┐
+                                            │  MongoDB Atlas       │
+                                            │  (Mongoose)          │
+                                            └──────────────────────┘
+
+Pipeline (shared by web + CLI evaluator)
+────────────────────────────────────────
+  Groq (LLM)  ·  Axios/Cheerio (company crawl)
+  Firecrawl Search + selective Scrape (public interview research)
+```
+
+| Layer | Stack |
+|-------|--------|
+| Frontend | Next.js, TypeScript, Tailwind |
+| Backend | Node.js, Express, TypeScript (`tsx`) |
+| Database | MongoDB Atlas + Mongoose |
+| Auth | bcrypt password hashes + httpOnly JWT cookie |
+| LLM | Groq |
+| Company research | Custom Axios + Cheerio crawler |
+| Public interview research | Firecrawl Search + selective Scrape |
+
+---
+
+## Generation pipeline
+
+Entry point: `backend/src/pipeline/runPipeline.ts`
+
+```text
+JD + company_url + days
+        │
+        ▼
+1. extractRequirements          (Groq)
+        │
+        ▼
+2. crawlCompany                 (Axios + Cheerio)
+        │
+        ▼
+3. generateCompanyBrief         (Groq)
+        │
+        ▼
+4. researchInterviewProcess     (Firecrawl Search → rank → scrape top hits)
+        │
+        ▼
+5. generateAllQuestions         (Groq, per category)
+        │
+        ▼
+6. ensureCoverage               (Groq, targeted must-have gaps only)
+        │
+        ▼
+7. generateFlashcards           (Groq)
+        │
+        ▼
+8. buildSchedule                (deterministic, local)
+        │
+        ▼
+9. KitSchema.parse              (Zod) — hard fail if invalid / uncovered must-haves
+```
+
+Generation is multi-step on purpose. Requirements are extracted first; questions are generated by category; a coverage pass only fills missing must-haves; the final Zod schema is the shipping gate.
+
+---
+
+## Research strategy
+
+### Company site (production)
+
+Custom crawler in `backend/src/pipeline/crawlCompany.ts`:
+
+1. Validate URL / block private & loopback hosts (unless explicitly allowed)
+2. Fetch homepage (timeout, size, content-type checks; HTTP retry/backoff)
+3. Discover internal links with Cheerio and score careers / about / engineering / culture / hiring pages
+4. Fetch top relevant subpages
+5. Record failed subpages in `skipped[]` without aborting the crawl
+
+### Public interview research
+
+`backend/src/pipeline/interviewResearch.ts` keeps Firecrawl usage low:
+
+1. One Search for snippets
+2. Local ranking for company + hiring signal
+3. Scrape only the top relevant URLs (typically 1–2)
+4. Optional fallback search if needed
+
+In our tests this usually costs about **3–4 Firecrawl credits** per company.
+
+### Firecrawl Map — evaluated, not used
+
+Map was benchmarked (`backend/src/cli/test-map.ts`) against Trao, Amazon Jobs, and Microsoft with `limit: 5`. It was slower, returned noisier URLs (often missing careers hubs), and costs ~1 credit per mapped page. **It is not integrated.** Production company discovery stays on the custom crawler.
+
+---
+
+## Coverage + schedule logic
+
+**Coverage** (`coverage.ts` + `ensureCoverage.ts` + `KitSchema.superRefine`):
+
+- Must-have requirements must appear on at least one question
+- Coverage pass generates targeted questions for gaps (not a full regen)
+- Kits with remaining uncovered must-haves fail Zod validation and do not ship
+
+**Schedule** (`schedule.ts`):
+
+- Clamped to **1–60** days
+- Deterministic: must-have questions before nice-to-have, then higher difficulty first
+- Questions round-robin across days; minutes derived from difficulty (10 / 15 / 20)
+- Empty days become “Review and reinforcement”
+
+---
+
+## Editing / regeneration behavior
+
+| Action | Behavior |
+|--------|----------|
+| Edit question / flashcard / brief | Persisted; question marked edited in `editorState` |
+| Add question / flashcard | Marked manual |
+| Regenerate category | Replaces generated questions in that category; **manual / edited / pinned IDs survive** |
+| Regenerate schedule | Rebuilds from current questions + chosen day count |
+| Regenerate company brief | Re-crawls company and regenerates brief |
+
+---
+
+## Practice mode
+
+- One flashcard at a time
+- Reveal answer, then independently set **covered** and **confidence** (1–3)
+- Progress persisted on the kit document
+- Next session order: never reviewed → lowest confidence → uncovered before covered
+
+---
+
+## Security
+
+- Passwords hashed with bcrypt (cost 12)
+- JWT in httpOnly cookie (`sameSite: lax`, `secure` in production)
+- Company crawl SSRF protection: rejects private / loopback hosts unless `ALLOW_PRIVATE_URLS=true` or evaluator `allowPrivateUrls`
+- HTML content-type checks and ~2 MB response size limits on crawl fetches
+- Failed subpages skipped and reported instead of failing the whole kit
+- LLM retries via `withRetry`; HTTP crawl retries via `withHttpRetry`
 
 ---
 
 ## Setup
 
-### 1. Install backend dependencies
+### Prerequisites
+
+- Node.js 18+
+- MongoDB Atlas (or any MongoDB URI)
+- [Groq](https://console.groq.com/) API key
+- [Firecrawl](https://www.firecrawl.dev/) API key
+
+### Install
 
 ```bash
-cd backend
-npm install
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-### 2. Configure environment
+Root install is optional; root `package.json` only proxies the evaluator into `backend`.
 
-Create `backend/.env`:
+---
+
+## Environment variables
+
+### `backend/.env`
 
 ```env
-GROQ_API_KEY=your_groq_api_key
-GROQ_MODEL=llama-3.3-70b-versatile
-FIRECRAWL_API_KEY=your_firecrawl_api_key
-MONGODB_URI=mongodb://127.0.0.1:27017/trao
 PORT=5000
+MONGODB_URI=mongodb+srv://...
+JWT_SECRET=replace-with-a-long-random-string
+GROQ_API_KEY=...
+GROQ_MODEL=llama-3.3-70b-versatile
+FIRECRAWL_API_KEY=...
 
-# Optional: allow localhost company URLs (e.g. Trao local fixtures)
+# Optional: allow localhost / private company URLs (local fixtures only)
 # ALLOW_PRIVATE_URLS=true
 ```
 
 | Variable | Required for | Notes |
 |----------|--------------|--------|
-| `GROQ_API_KEY` | Pipeline / evaluate | LLM calls |
+| `GROQ_API_KEY` | Pipeline / evaluate / API | LLM calls |
 | `GROQ_MODEL` | Optional | Defaults to `llama-3.3-70b-versatile` |
-| `FIRECRAWL_API_KEY` | Interview research util | Loaded at import of firecrawl util |
-| `MONGODB_URI` | `npm run dev` / API only | Not needed for `evaluate` |
-| `PORT` | API only | Defaults to `5000` |
-| `ALLOW_PRIVATE_URLS` | Optional | Set `true` for local fixture hosts |
+| `FIRECRAWL_API_KEY` | Interview research | Loaded by Firecrawl util |
+| `MONGODB_URI` | API server | Not required for CLI evaluate |
+| `JWT_SECRET` | Auth | Cookie signing |
+| `PORT` | API | Defaults to `5000` |
+| `ALLOW_PRIVATE_URLS` | Optional | Local fixture crawls |
 
-Root install is not required for evaluate (root `package.json` only proxies into `backend`).
+### `frontend/.env.local`
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000
+```
+
+Never commit real secrets.
 
 ---
 
-## Mandatory: batch evaluation
+## Run frontend / backend
 
-From the **repo root** (`traq/`):
+```bash
+# API — http://localhost:5000
+cd backend
+npm run dev
+
+# UI — http://localhost:3000
+cd frontend
+npm run dev
+```
+
+Health check: `GET /health`
+
+CORS is configured for `http://localhost:3000` with credentials.
+
+### Main API surface
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/auth/register` | Create account + cookie |
+| POST | `/api/auth/login` | Login + cookie |
+| POST | `/api/auth/logout` | Clear cookie |
+| GET | `/api/auth/me` | Current user |
+| POST | `/api/kits` | Generate + save kit |
+| GET | `/api/kits` | List kits |
+| GET | `/api/kits/:id` | Get kit |
+| PATCH/POST/DELETE | `/api/kits/:id/questions...` | Question CRUD / order / category regen |
+| PATCH/POST/DELETE | `/api/kits/:id/flashcards...` | Flashcard CRUD |
+| PATCH | `/api/kits/:id/company-brief` | Edit brief |
+| POST | `/api/kits/:id/regenerate/company-brief` | Regen brief |
+| POST | `/api/kits/:id/regenerate/schedule` | Regen schedule |
+| GET | `/api/kits/:id/practice` | Ordered practice queue |
+| PATCH | `/api/kits/:id/practice/:flashcardId` | Save confidence + covered |
+
+---
+
+## CLI evaluator
+
+From the **repo root**:
 
 ```bash
 npm run evaluate -- --input cases.json --output kits.json
 ```
 
-This:
+This runs the **same** `runPipeline` as the web app. Paths resolve via `INIT_CWD`, so root-level `cases.json` works even though the script executes under `backend/`.
 
-1. Reads an array of cases from `--input`
-2. Runs `runPipeline` for each case
-3. **Continues after individual failures**
-4. Writes a results file to `--output`
-
-### Case format (`cases.json`)
+Case shape:
 
 ```json
 [
@@ -120,192 +296,90 @@ This:
     "jd": "Software Engineer\n\n...",
     "company_url": "https://www.trao.ai",
     "days": 5
-  },
-  {
-    "id": "case-broken-company",
-    "jd": "Software Engineer\n\n...",
-    "company_url": "https://this-domain-definitely-does-not-exist-trao-test.invalid",
-    "days": 3
   }
 ]
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Case identifier |
-| `jd` | string | Full job description text |
-| `company_url` | string | Company homepage URL |
-| `days` | number | Study schedule length (1–60) |
+- Continues after individual failures
+- Writes `{ version, generated_at, kits: [{ id, status, kit, error }] }`
 
-### Output format (`kits.json`)
+| Error code | When |
+|------------|------|
+| `COMPANY_UNREACHABLE` | Bad URL, DNS, timeout, crawl reachability |
+| `RATE_LIMITED` | Upstream rate limit |
+| `INVALID_JOB_DESCRIPTION` | JD validation |
+| `KIT_VALIDATION_FAILED` | Zod / schema failures |
+| `PIPELINE_FAILED` | Other pipeline errors |
 
-```json
-{
-  "version": "1.0",
-  "generated_at": "2026-...",
-  "kits": [
-    {
-      "id": "case-trao-swe",
-      "status": "ok",
-      "kit": { "...validated KitSchema..." },
-      "error": null
-    },
-    {
-      "id": "case-broken-company",
-      "status": "failed",
-      "kit": null,
-      "error": {
-        "code": "COMPANY_UNREACHABLE",
-        "message": "..."
-      }
-    }
-  ]
-}
-```
-
-### Failure codes
-
-| Code | When |
-|------|------|
-| `COMPANY_UNREACHABLE` | Bad URL, DNS failure, timeout, 404-like crawl errors |
-| `RATE_LIMITED` | Upstream rate limit message |
-| `INVALID_JOB_DESCRIPTION` | JD-related validation errors |
-| `KIT_VALIDATION_FAILED` | Zod / schema validation failures |
-| `PIPELINE_FAILED` | All other pipeline errors |
-
-Relative `--input` / `--output` paths are resolved from the directory where you ran `npm` (`INIT_CWD`), so root-level `cases.json` works even though the script runs under `backend/`.
+**Benchmark** (`cases-benchmark.json`): 5 successful kits + 1 expected failure for a broken company URL.
 
 ---
 
-## Pipeline
+## Tests
 
-Entry point: `backend/src/pipeline/runPipeline.ts`
-
-```text
-JD + company_url + days
-        │
-        ▼
-1. extractRequirements     (Groq)   → role, requirements
-        │
-        ▼
-2. crawlCompany            (HTTP)   → homepage + related pages
-        │
-        ▼
-3. generateCompanyBrief    (Groq)   → summary, what_they_do, sources
-        │
-        ▼
-4. generateAllQuestions    (Groq)   → technical / behavioural /
-   (per category)                     system-design / company-fit
-        │
-        ▼
-5. ensureCoverage          (Groq)   → fill gaps for uncovered must-haves only
-        │
-        ▼
-6. generateFlashcards      (Groq)
-        │
-        ▼
-7. buildSchedule           (local)  → N-day plan
-        │
-        ▼
-8. KitSchema.parse         (Zod)    → validated kit or throw
+```bash
+cd backend
+npm test
+npx tsc --noEmit
 ```
 
-### Robustness
-
-- Every Groq call goes through `withRetry()` (`backend/src/utils/retry.ts`): retries 429 / 5xx with exponential backoff and `retry-after` support.
-- `ensureCoverage` only generates questions for **missing** requirements via `generateQuestionsForCategory`, not a full second pass of all categories.
-- Nothing leaves the pipeline unless it passes `KitSchema`.
-
-### Kit shape (summary)
-
-Validated by `backend/src/schemas/kit.schema.ts`:
-
-- **source** — company, URL, role, JD length, pages used, timestamp
-- **company_brief** — summary, what they do, sources
-- **role** — title, seniority, responsibilities, requirements (`must` / `nice`, kinds: technical / behavioural / domain)
-- **questions** — categories, prompts, answer outlines, difficulty 1–3, linked requirement IDs
-- **flashcards** — front / back, linked requirement IDs
-- **schedule** — `days_available` + per-day focus, question IDs, minutes
-- **coverage** — uncovered must-have IDs + pass count
+- **26/26** Vitest tests across `schedule`, `coverage`, and `kit.schema`
+- TypeScript check passes with `npx tsc --noEmit`
 
 ---
 
-## Local development commands
+## Design decisions / tradeoffs
 
-### Batch evaluate (from repo root)
+| Decision | Why |
+|----------|-----|
+| Multi-step pipeline vs one giant prompt | Better control, retries, and coverage enforcement |
+| Custom company crawler vs Firecrawl Crawl/Map | Deterministic, free discovery, low noise; Map benchmarked and rejected |
+| Firecrawl only for public interview research | Credits go where search quality matters |
+| Zod as final gate | Uncovered must-haves cannot ship |
+| Deterministic schedule | Stable, testable, no extra LLM cost |
+| Cookie JWT auth | Simple SPA auth without storing tokens in JS |
+| Shared pipeline for web + evaluate | Evaluator scores the real product path |
+
+---
+
+## Known limitations
+
+- Question generation can invent adjacent tech not in the JD; prompts can be tightened further
+- Company name is inferred from homepage title / URL and can be noisy on marketing sites
+- Backend CORS origin is hardcoded to `http://localhost:3000` for local development
+- Full-site Firecrawl Crawl is intentionally unused (cost + determinism)
+- Interview research depends on public sources; some companies return `found: false` by design
+
+---
+
+## Deployment
+
+No production host is configured in this repo. A typical split:
+
+1. **MongoDB Atlas** — set `MONGODB_URI`
+2. **Backend** — Node host (e.g. Render / Railway / Fly); run `npm start` from `backend/`
+3. **Frontend** — Next.js host (e.g. Vercel); set `NEXT_PUBLIC_API_URL` to the API origin
+4. Update CORS `origin` in `backend/src/server.ts` to the deployed frontend URL
+5. Set `NODE_ENV=production` so auth cookies use `secure: true`
+6. Provide `JWT_SECRET`, `GROQ_API_KEY`, `FIRECRAWL_API_KEY`
+
+The CLI evaluator can run anywhere Node + Groq + Firecrawl are available; it does not require MongoDB.
+
+---
+
+## Demo walkthrough
+
+1. Start backend and frontend (`npm run dev` in each folder)
+2. Open `http://localhost:3000` → register / sign in
+3. **Create new kit** with a real JD + company URL (e.g. Trao or Amazon Jobs) and 5 days
+4. Wait for generation → open **Overview** (brief + requirements + coverage)
+5. **Questions** — edit one question, regenerate a category, confirm edited/manual items remain
+6. **Schedule** — confirm day cards show prompts; try regenerate with a different day count
+7. **Practice** — reveal answer, toggle covered, rate confidence; reload and confirm low-confidence cards rise
+8. From repo root, run:
 
 ```bash
 npm run evaluate -- --input cases.json --output kits.json
 ```
 
-### Full pipeline smoke test (backend)
-
-```bash
-cd backend
-npx tsx src/cli/test-run-pipeline.ts
-# or
-npx tsx src/cli/test-pipeline.ts
-```
-
-### Stage CLIs (backend)
-
-| Script | Purpose |
-|--------|---------|
-| `src/cli/test-extraction.ts` | Requirement extraction |
-| `src/cli/test-crawler.ts` | Company crawl |
-| `src/cli/test-company-brief.ts` | Company brief |
-| `src/cli/test-firecrawl.ts` | Firecrawl smoke test |
-| `src/cli/test-interview-research.ts` | Public interview research |
-
-### HTTP API
-
-```bash
-cd backend
-npm run dev    # tsx watch src/server.ts
-# or
-npm start
-```
-
-- `GET /health` → `{ success: true, message: "Trao Interview Kit API is running" }`
-- Connects to MongoDB on startup
-- Routes / controllers / auth are scaffolded but not fully productized yet
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Next.js 16 starter on `http://localhost:3000`. Not yet connected to the kit pipeline.
-
----
-
-## Sample evaluate result
-
-Verified locally with the included `cases.json`:
-
-| Case | Result |
-|------|--------|
-| `case-trao-swe` | `ok` — full kit (requirements, questions, flashcards, 5-day schedule, zero uncovered must-haves) |
-| `case-broken-company` | `failed` — `COMPANY_UNREACHABLE` (hostname does not resolve); does **not** stop the batch |
-
----
-
-## Tech stack
-
-| Layer | Stack |
-|-------|--------|
-| Backend | Node.js, Express 5, TypeScript (`tsx`), Zod, Mongoose |
-| LLM | Groq (`llama-3.3-70b-versatile` by default) |
-| Crawl | Axios + Cheerio (company site); Firecrawl SDK for research helpers |
-| Frontend | Next.js 16, React 19, Tailwind 4 |
-
----
-
-## Notes / known follow-ups
-
-- Question generation can still invent adjacent tech (e.g. Redis, Kubernetes) not present in the JD; tighten prompts before final submission.
-- Frontend and persistent kit APIs are incomplete relative to the pipeline.
-- Keep secrets in `backend/.env` only — never commit API keys.
+Confirm Trao succeeds and the broken-domain case fails cleanly without aborting the batch.

@@ -719,18 +719,19 @@ export default function KitPage() {
 
       {/* TOP BAR */}
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#080808]/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-10">
           <button
             type="button"
             onClick={() =>
               router.push("/dashboard")
             }
-            className="text-sm text-zinc-500 transition hover:text-white"
+            className="shrink-0 text-sm text-zinc-500 transition hover:text-white"
           >
-            ← Dashboard
+            <span className="sm:hidden">←</span>
+            <span className="hidden sm:inline">← Dashboard</span>
           </button>
 
-          <div className="text-sm font-medium tracking-[0.18em] text-emerald-400">
+          <div className="truncate text-sm font-medium tracking-[0.18em] text-emerald-400">
             TRAO PREP
           </div>
 
@@ -741,14 +742,15 @@ export default function KitPage() {
                 `/kits/${id}/practice`
               )
             }
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black"
+            className="shrink-0 rounded-lg bg-white px-3 py-2 text-sm font-medium text-black sm:px-4"
           >
-            Practice →
+            <span className="sm:hidden">Practice</span>
+            <span className="hidden sm:inline">Practice →</span>
           </button>
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-6 py-10 lg:px-10">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
 
         {/* HERO */}
         <section className="border-b border-white/10 pb-9">
@@ -756,7 +758,7 @@ export default function KitPage() {
             {kit.source.company}
           </div>
 
-          <h1 className="mt-2 text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
             {kit.role.title}
           </h1>
 
@@ -788,7 +790,7 @@ export default function KitPage() {
         </section>
 
         {/* TABS */}
-        <nav className="mt-8 flex gap-1 overflow-x-auto border-b border-white/10">
+        <nav className="-mx-4 mt-8 flex gap-1 overflow-x-auto border-b border-white/10 px-4 sm:mx-0 sm:px-0">
           {(
             [
               "overview",
@@ -803,7 +805,7 @@ export default function KitPage() {
               onClick={() =>
                 setTab(item)
               }
-              className={`whitespace-nowrap border-b-2 px-5 py-3 text-sm capitalize transition ${
+              className={`shrink-0 whitespace-nowrap border-b-2 px-4 py-3 text-sm capitalize transition sm:px-5 ${
                 tab === item
                   ? "border-emerald-400 text-white"
                   : "border-transparent text-zinc-500 hover:text-white"
@@ -1856,8 +1858,8 @@ export default function KitPage() {
               </div>
 
               {/* REGENERATE */}
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <div>
+              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end">
+                <div className="w-full sm:w-auto">
                   <label className="mb-2 block text-[11px] uppercase tracking-wider text-zinc-600">
                     Days available
                   </label>
@@ -1886,7 +1888,7 @@ export default function KitPage() {
                   type="button"
                   onClick={regenerateSchedule}
                   disabled={scheduleRegenerating}
-                  className="rounded-xl bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-xl bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 >
                   {scheduleRegenerating
                     ? "Regenerating..."

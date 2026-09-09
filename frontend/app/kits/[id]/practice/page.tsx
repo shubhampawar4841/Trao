@@ -234,57 +234,58 @@ export default function PracticePage() {
 
       {/* TOP */}
       <header className="border-b border-white/10">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
           <button
             type="button"
             onClick={() =>
               router.push(`/kits/${id}`)
             }
-            className="text-sm text-zinc-500 hover:text-white"
+            className="shrink-0 text-sm text-zinc-500 hover:text-white"
           >
-            ← Back to kit
+            <span className="sm:hidden">←</span>
+            <span className="hidden sm:inline">← Back to kit</span>
           </button>
 
-          <div className="text-sm font-medium tracking-[0.18em] text-emerald-400">
+          <div className="truncate text-sm font-medium tracking-[0.18em] text-emerald-400">
             PRACTICE
           </div>
 
-          <div className="text-sm text-zinc-500">
+          <div className="shrink-0 text-sm text-zinc-500">
             {index + 1} / {cards.length}
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-3xl px-6 py-12">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
 
         {/* STATS */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl border border-white/10 bg-[#101010] p-4">
-            <div className="text-xs text-zinc-600">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="rounded-xl border border-white/10 bg-[#101010] p-3 sm:p-4">
+            <div className="text-[10px] text-zinc-600 sm:text-xs">
               Total cards
             </div>
 
-            <div className="mt-2 text-xl font-medium">
+            <div className="mt-2 text-lg font-medium sm:text-xl">
               {stats.total}
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-[#101010] p-4">
-            <div className="text-xs text-zinc-600">
+          <div className="rounded-xl border border-white/10 bg-[#101010] p-3 sm:p-4">
+            <div className="text-[10px] text-zinc-600 sm:text-xs">
               Mastered
             </div>
 
-            <div className="mt-2 text-xl font-medium text-emerald-400">
+            <div className="mt-2 text-lg font-medium text-emerald-400 sm:text-xl">
               {mastered}
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-[#101010] p-4">
-            <div className="text-xs text-zinc-600">
+          <div className="rounded-xl border border-white/10 bg-[#101010] p-3 sm:p-4">
+            <div className="text-[10px] text-zinc-600 sm:text-xs">
               Needs review
             </div>
 
-            <div className="mt-2 text-xl font-medium">
+            <div className="mt-2 text-lg font-medium sm:text-xl">
               {needsReview}
             </div>
           </div>
@@ -307,7 +308,7 @@ export default function PracticePage() {
         )}
 
         {/* CARD */}
-        <section className="mt-10 min-h-[380px] rounded-3xl border border-white/10 bg-[#101010] p-8 sm:p-10">
+        <section className="mt-10 min-h-[320px] rounded-3xl border border-white/10 bg-[#101010] p-5 sm:min-h-[380px] sm:p-8 lg:p-10">
 
           <div className="flex items-center justify-between">
             <span className="text-xs text-zinc-600">
@@ -333,7 +334,7 @@ export default function PracticePage() {
               Question
             </div>
 
-            <h1 className="mt-4 text-2xl font-medium leading-9 sm:text-3xl">
+            <h1 className="mt-4 text-xl font-medium leading-8 sm:text-2xl sm:leading-9 lg:text-3xl">
               {card.front}
             </h1>
           </div>
