@@ -19,6 +19,28 @@ interface RunPipelineInput {
   allowPrivateUrls?: boolean;
 }
 
+export interface PipelineDiagnostics {
+  requirementCount: number;
+  companyPagesFound: number;
+  hasHiringPage: boolean;
+  skippedSources: {
+    url: string;
+    reason: string;
+  }[];
+  publicDiscussionFound: boolean;
+  publicDiscussionSources: number;
+  publicDiscussionNote: string;
+  questionCount: number;
+  uncoveredMustHaveCount: number;
+  coveragePasses: number;
+  scheduleDays: number;
+}
+
+export interface PipelineResult {
+  kit: Kit;
+  diagnostics: PipelineDiagnostics;
+}
+
 function inferCompanyName(
   companyUrl: string,
   homepageTitle: string
@@ -58,12 +80,28 @@ function inferCompanyName(
   }
 }
 
+function looksLikeHiringPage(
+  url: string,
+  title: string
+): boolean {
+  const value = `${url} ${title}`.toLowerCase();
+
+  return [
+    "career",
+    "hiring",
+    "job",
+    "interview",
+    "how-we-hire",
+    "how we hire",
+  ].some((keyword) => value.includes(keyword));
+}
+
 export async function runPipeline({
   jd,
   company_url,
   days,
   allowPrivateUrls = false,
-}: RunPipelineInput): Promise<Kit> {
+}: RunPipelineInput): Promise<PipelineResult> {
   if (!jd.trim()) {
     throw new Error("Job description is required");
   }
@@ -194,5 +232,43 @@ export async function runPipeline({
   // Final safety gate.
   // Nothing leaves this pipeline unless it matches
   // Trao's required structure.
-  return KitSchema.parse(kit);
+  const validatedKit = KitSchema.parse(kit);
+
+  const diagnostics: PipelineDiagnostics = {
+    requirementCount:
+      role.requirements.length,
+
+    companyPagesFound: crawl.pages.length,
+
+    hasHiringPage: crawl.pages.some((page) =>
+      looksLikeHiringPage(page.url, page.title)
+    ),
+
+    skippedSources: crawl.skipped,
+
+    publicDiscussionFound:
+      interviewResearch.found,
+
+    publicDiscussionSources:
+      interviewResearch.sources.length,
+
+    publicDiscussionNote:
+      interviewResearch.note,
+
+    questionCount:
+      coverageResult.questions.length,
+
+    uncoveredMustHaveCount:
+      coverageResult.uncovered_requirement_ids
+        .length,
+
+    coveragePasses: coverageResult.passes,
+
+    scheduleDays: schedule.days_available,
+  };
+
+  return {
+    kit: validatedKit,
+    diagnostics,
+  };
 }

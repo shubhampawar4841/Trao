@@ -112,7 +112,99 @@ async function validateUrl(
   return url;
 }
 
-async function loadRobots(baseUrl: URL) {
+async function safeGetText(
+  rawUrl: string,
+  options: CrawlOptions = {},
+  accept = "text/html,application/xhtml+xml",
+  timeout = 10_000
+) {
+  let currentUrl =
+    await validateUrl(rawUrl, options);
+
+  const MAX_REDIRECTS = 5;
+
+  for (
+    let redirects = 0;
+    redirects <= MAX_REDIRECTS;
+    redirects++
+  ) {
+    const response =
+      await withHttpRetry(() =>
+        axios.get<string>(
+          currentUrl.toString(),
+          {
+            timeout,
+            responseType: "text",
+
+            maxContentLength:
+              MAX_PAGE_BYTES,
+
+            maxBodyLength:
+              MAX_PAGE_BYTES,
+
+            // We follow redirects ourselves
+            // so every destination is validated.
+            maxRedirects: 0,
+
+            headers: {
+              "User-Agent":
+                "TraoInterviewPrepBot/1.0 (+interview-preparation-assessment)",
+
+              Accept: accept,
+            },
+
+            validateStatus: (
+              status
+            ) =>
+              status >= 200 &&
+              status < 400,
+          }
+        )
+      );
+
+    if (
+      response.status >= 300 &&
+      response.status < 400
+    ) {
+      const location =
+        response.headers.location;
+
+      if (!location) {
+        throw new Error(
+          `Redirect without Location header: ${currentUrl.toString()}`
+        );
+      }
+
+      const redirectUrl =
+        new URL(
+          location,
+          currentUrl
+        );
+
+      // Critical:
+      // DNS/private-IP validation runs
+      // again for EVERY redirect.
+      currentUrl =
+        await validateUrl(
+          redirectUrl.toString(),
+          options
+        );
+
+      continue;
+    }
+
+    return response;
+  }
+
+  throw new Error(
+    "Too many redirects"
+  );
+}
+
+async function loadRobots(
+  baseUrl: URL,
+  options: CrawlOptions = {}
+) {
   const robotsUrl = new URL(
     "/robots.txt",
     baseUrl.origin
@@ -120,23 +212,11 @@ async function loadRobots(baseUrl: URL) {
 
   try {
     const response =
-      await withHttpRetry(() =>
-        axios.get<string>(
-          robotsUrl.toString(),
-          {
-            timeout: 5_000,
-
-            headers: {
-              "User-Agent":
-                USER_AGENT,
-              Accept:
-                "text/plain",
-            },
-
-            validateStatus: () =>
-              true,
-          }
-        )
+      await safeGetText(
+        robotsUrl.toString(),
+        options,
+        "text/plain",
+        5_000
       );
 
     /*
@@ -315,39 +395,38 @@ function extractInternalLinks(
 
 async function fetchPage(
   url: string,
-  score = 0
+  score = 0,
+  options: CrawlOptions = {}
 ): Promise<CrawledPage> {
   const response =
-    await withHttpRetry(() =>
-      axios.get<string>(url, {
-        timeout: 10_000,
-        responseType: "text",
-        maxContentLength: MAX_PAGE_BYTES,
-        maxBodyLength: MAX_PAGE_BYTES,
-        maxRedirects: 5,
-
-        headers: {
-          "User-Agent":
-            "TraoInterviewPrepBot/1.0 (+interview-preparation-assessment)",
-          Accept: "text/html,application/xhtml+xml",
-        },
-
-        validateStatus: (status) =>
-          status >= 200 &&
-          status < 400,
-      })
+    await safeGetText(
+      url,
+      options
     );
 
   const contentType =
-    String(response.headers["content-type"] || "").toLowerCase();
+    String(
+      response.headers[
+        "content-type"
+      ] || ""
+    ).toLowerCase();
 
-  if (!contentType.includes("text/html")) {
+  if (
+    !contentType.includes(
+      "text/html"
+    )
+  ) {
     throw new Error(
-      `Unsupported content type: ${contentType || "unknown"}`
+      `Unsupported content type: ${
+        contentType || "unknown"
+      }`
     );
   }
 
-  const cleaned = cleanPageText(response.data);
+  const cleaned =
+    cleanPageText(
+      response.data
+    );
 
   return {
     url,
@@ -365,7 +444,8 @@ export async function crawlCompany(
 
   const robots =
     await loadRobots(
-      validatedUrl
+      validatedUrl,
+      options
     );
 
   if (
@@ -380,23 +460,9 @@ export async function crawlCompany(
   }
 
   const homepageResponse =
-    await withHttpRetry(() =>
-      axios.get<string>(
-        validatedUrl.toString(),
-        {
-          timeout: 10_000,
-          responseType: "text",
-          maxContentLength: MAX_PAGE_BYTES,
-          maxBodyLength: MAX_PAGE_BYTES,
-          maxRedirects: 5,
-
-          headers: {
-            "User-Agent":
-              "TraoInterviewPrepBot/1.0 (+interview-preparation-assessment)",
-            Accept: "text/html,application/xhtml+xml",
-          },
-        }
-      )
+    await safeGetText(
+      validatedUrl.toString(),
+      options
     );
 
   const contentType =
@@ -467,7 +533,8 @@ export async function crawlCompany(
       const page =
         await fetchPage(
           link.url,
-          link.score
+          link.score,
+          options
         );
 
       pages.push(page);

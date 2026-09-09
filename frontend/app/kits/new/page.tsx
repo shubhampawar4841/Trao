@@ -26,6 +26,30 @@ interface CreateKitResponse {
     id: string;
     status: string;
   };
+
+  diagnostics: PipelineDiagnostics;
+}
+
+interface PipelineDiagnostics {
+  requirementCount: number;
+  companyPagesFound: number;
+  hasHiringPage: boolean;
+  skippedSources: {
+    url: string;
+    reason: string;
+  }[];
+  publicDiscussionFound: boolean;
+  publicDiscussionSources: number;
+  publicDiscussionNote: string;
+  questionCount: number;
+  uncoveredMustHaveCount: number;
+  coveragePasses: number;
+  scheduleDays: number;
+}
+
+interface SummaryItem {
+  status: "ok" | "warn";
+  label: string;
 }
 
 type InputMode = "single" | "batch";
@@ -80,6 +104,14 @@ export default function NewKitPage() {
   const [error, setError] =
     useState("");
 
+  const [completedKitId, setCompletedKitId] =
+    useState<string | null>(null);
+
+  const [diagnostics, setDiagnostics] =
+    useState<PipelineDiagnostics | null>(
+      null
+    );
+
   useEffect(() => {
     if (!loading) {
       setStepIndex(0);
@@ -97,6 +129,97 @@ export default function NewKitPage() {
 
     return () => clearInterval(interval);
   }, [loading]);
+
+  function buildSummaryItems(
+    data: PipelineDiagnostics
+  ): SummaryItem[] {
+    const items: SummaryItem[] = [
+      {
+        status: "ok",
+        label: `${data.requirementCount} requirement${
+          data.requirementCount === 1 ? "" : "s"
+        } extracted`,
+      },
+      {
+        status: "ok",
+        label: "Company homepage analyzed",
+      },
+    ];
+
+    if (data.hasHiringPage) {
+      items.push({
+        status: "ok",
+        label: "Careers / hiring page found",
+      });
+    } else if (data.companyPagesFound > 0) {
+      items.push({
+        status: "warn",
+        label: `${data.companyPagesFound} company page${
+          data.companyPagesFound === 1 ? "" : "s"
+        } researched (no clear careers page)`,
+      });
+    } else {
+      items.push({
+        status: "warn",
+        label: "No additional company pages found",
+      });
+    }
+
+    if (data.skippedSources.length > 0) {
+      items.push({
+        status: "warn",
+        label: `${data.skippedSources.length} company page${
+          data.skippedSources.length === 1
+            ? ""
+            : "s"
+        } skipped`,
+      });
+    }
+
+    if (data.publicDiscussionFound) {
+      items.push({
+        status: "ok",
+        label: `${data.publicDiscussionSources} public interview source${
+          data.publicDiscussionSources === 1
+            ? ""
+            : "s"
+        } verified`,
+      });
+    } else {
+      items.push({
+        status: "warn",
+        label:
+          "No public interview discussion found",
+      });
+    }
+
+    items.push({
+      status: "ok",
+      label: `${data.questionCount} questions generated`,
+    });
+
+    items.push({
+      status:
+        data.uncoveredMustHaveCount === 0
+          ? "ok"
+          : "warn",
+      label:
+        data.uncoveredMustHaveCount === 0
+          ? "Coverage complete"
+          : `${data.uncoveredMustHaveCount} must-have${
+              data.uncoveredMustHaveCount === 1
+                ? ""
+                : "s"
+            } still uncovered`,
+    });
+
+    items.push({
+      status: "ok",
+      label: `${data.scheduleDays}-day schedule built`,
+    });
+
+    return items;
+  }
 
   function validateBatchCase(
     value: unknown,
@@ -355,9 +478,11 @@ export default function NewKitPage() {
           }
         );
 
-      router.push(
-        `/kits/${response.kit.id}`
+      setCompletedKitId(
+        String(response.kit.id)
       );
+      setDiagnostics(response.diagnostics);
+      setLoading(false);
     } catch (err) {
       setError(
         err instanceof Error
@@ -367,6 +492,121 @@ export default function NewKitPage() {
 
       setLoading(false);
     }
+  }
+
+  if (
+    completedKitId &&
+    diagnostics &&
+    mode === "single"
+  ) {
+    const summaryItems =
+      buildSummaryItems(diagnostics);
+
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#080808] px-6 text-white">
+        <div className="w-full max-w-xl">
+          <div className="mb-8 flex items-center gap-3">
+            <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+
+            <span className="text-sm tracking-[0.15em] text-emerald-400">
+              GENERATION COMPLETE
+            </span>
+          </div>
+
+          <h1 className="text-4xl font-semibold tracking-tight">
+            Your interview kit is ready.
+          </h1>
+
+          <p className="mt-4 text-zinc-500">
+            Honest research summary before you open
+            the kit — including pages we could not
+            use and interview discussions we could
+            not verify.
+          </p>
+
+          <div className="mt-10 space-y-2">
+            {summaryItems.map((item) => (
+              <div
+                key={item.label}
+                className={`flex items-start gap-4 rounded-xl border px-4 py-3 ${
+                  item.status === "ok"
+                    ? "border-emerald-500/20 bg-emerald-500/[0.04]"
+                    : "border-amber-500/20 bg-amber-500/[0.04]"
+                }`}
+              >
+                <div
+                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs ${
+                    item.status === "ok"
+                      ? "bg-emerald-400 text-black"
+                      : "bg-amber-400/20 text-amber-400"
+                  }`}
+                >
+                  {item.status === "ok"
+                    ? "✓"
+                    : "!"}
+                </div>
+
+                <span
+                  className={`text-sm leading-6 ${
+                    item.status === "ok"
+                      ? "text-zinc-200"
+                      : "text-amber-200/90"
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {diagnostics.skippedSources.length >
+            0 && (
+            <div className="mt-6 rounded-xl border border-white/5 bg-black/30 p-4">
+              <div className="text-[10px] uppercase tracking-wider text-zinc-600">
+                Skipped sources
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {diagnostics.skippedSources.map(
+                  (source) => (
+                    <div
+                      key={source.url}
+                      className="text-xs leading-5 text-zinc-500"
+                    >
+                      <div className="truncate text-zinc-400">
+                        {source.url}
+                      </div>
+                      <div className="mt-0.5 text-zinc-600">
+                        {source.reason}
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          )}
+
+          {!diagnostics.publicDiscussionFound &&
+            diagnostics.publicDiscussionNote && (
+              <p className="mt-5 text-xs leading-5 text-zinc-600">
+                {diagnostics.publicDiscussionNote}
+              </p>
+            )}
+
+          <button
+            type="button"
+            onClick={() =>
+              router.push(
+                `/kits/${completedKitId}`
+              )
+            }
+            className="mt-10 w-full rounded-xl bg-white px-6 py-3.5 text-sm font-medium text-black transition hover:bg-zinc-200"
+          >
+            Open interview kit →
+          </button>
+        </div>
+      </main>
+    );
   }
 
   if (loading) {

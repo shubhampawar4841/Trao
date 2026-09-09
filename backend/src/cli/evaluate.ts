@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { runPipeline } from "../pipeline/runPipeline";
+import type { Kit } from "../schemas/kit.schema";
 
 interface EvaluationCase {
   id: string;
@@ -12,7 +13,7 @@ interface EvaluationCase {
 interface EvaluationSuccess {
   id: string;
   status: "ok";
-  kit: Awaited<ReturnType<typeof runPipeline>>;
+  kit: Kit;
   error: null;
 }
 
@@ -85,7 +86,7 @@ async function runCase(
   try {
     console.log(`\nRunning ${testCase.id}...`);
 
-    const kit = await runPipeline({
+    const { kit } = await runPipeline({
       jd: testCase.jd,
       company_url: testCase.company_url,
       days: testCase.days,

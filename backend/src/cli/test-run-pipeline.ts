@@ -17,7 +17,7 @@ Nice to have:
 async function main() {
   console.log("Running full pipeline...\n");
 
-  const kit = await runPipeline({
+  const { kit, diagnostics } = await runPipeline({
     jd,
     company_url: "https://www.trao.ai",
     days: 5,
@@ -28,6 +28,9 @@ async function main() {
   console.dir(kit, {
     depth: null,
   });
+
+  console.log("\n=== DIAGNOSTICS ===");
+  console.dir(diagnostics, { depth: null });
 
   console.log("\n=== VALIDATION SUMMARY ===");
 

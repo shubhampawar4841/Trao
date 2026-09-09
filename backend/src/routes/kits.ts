@@ -44,14 +44,14 @@ async function generateAndSaveKit(
   userId: string,
   input: CreateKitInput
 ) {
-  const generatedKit =
+  const { kit: generatedKit, diagnostics } =
     await runPipeline({
       jd: input.jd,
       company_url: input.company_url,
       days: input.days,
     });
 
-  return Kit.create({
+  const savedKit = await Kit.create({
     userId,
 
     input: {
@@ -77,6 +77,11 @@ async function generateAndSaveKit(
 
     practice: [],
   });
+
+  return {
+    savedKit,
+    diagnostics,
+  };
 }
 
 const BatchCaseSchema =
@@ -129,7 +134,7 @@ router.post(
         `Generating kit for user ${req.user!.id}`
       );
 
-      const savedKit =
+      const { savedKit, diagnostics } =
         await generateAndSaveKit(
           req.user!.id,
           {
@@ -148,6 +153,8 @@ router.post(
           data: savedKit.kit,
           createdAt: savedKit.createdAt,
         },
+
+        diagnostics,
       });
     } catch (error) {
       console.error(
@@ -254,7 +261,7 @@ router.post(
           status: "ok",
 
           kitId:
-            savedKit._id.toString(),
+            savedKit.savedKit._id.toString(),
 
           error: null,
         });
