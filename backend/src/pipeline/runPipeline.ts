@@ -5,6 +5,7 @@ import { generateAllQuestions } from "./generateQuestions";
 import { ensureCoverage } from "./ensureCoverage";
 import { generateFlashcards } from "./generateFlashcards";
 import { buildSchedule } from "./schedule";
+import { researchInterviewProcess } from "./interviewResearch";
 
 import {
   KitSchema,
@@ -57,6 +58,45 @@ function inferCompanyName(
   }
 }
 
+function buildInterviewContext(
+  research: Awaited<
+    ReturnType<typeof researchInterviewProcess>
+  >
+): string {
+  if (!research.found || research.sources.length === 0) {
+    return research.note;
+  }
+
+  const sourceBlocks = research.sources
+    .map((source, index) => {
+      const evidence =
+        source.evidence.length > 0
+          ? source.evidence
+              .map((line) => `  - ${line}`)
+              .join("\n")
+          : "  - No excerpt available";
+
+      return [
+        `SOURCE ${index + 1}`,
+        `Type: ${source.source_type}`,
+        `Title: ${source.title}`,
+        `URL: ${source.url}`,
+        "Evidence:",
+        evidence,
+      ].join("\n");
+    })
+    .join("\n\n");
+
+  return [
+    research.note,
+    "",
+    "Use ONLY the verified evidence below.",
+    "Do not invent interview rounds or processes that are not present.",
+    "",
+    sourceBlocks,
+  ].join("\n");
+}
+
 export async function runPipeline({
   jd,
   company_url,
@@ -97,12 +137,27 @@ export async function runPipeline({
   const companyBrief =
     await generateCompanyBrief(crawl);
 
+  console.log(
+    "Pipeline: researching public interview process"
+  );
+
+  const interviewResearch =
+    await researchInterviewProcess(
+      companyName,
+      company_url,
+      role.title
+    );
+
+  const interviewContext =
+    buildInterviewContext(interviewResearch);
+
   console.log("Pipeline: generating questions");
 
   const initialQuestions =
     await generateAllQuestions(
       role.requirements,
-      companyBrief
+      companyBrief,
+      interviewContext
     );
 
   console.log("Pipeline: checking coverage");
