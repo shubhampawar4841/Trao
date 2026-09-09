@@ -6,6 +6,7 @@ import type {
   Requirement,
 } from "../schemas/kit.schema";
 import type { CompanyBrief } from "./generateCompanyBrief";
+import type { InterviewResearch } from "./interviewResearch";
 
 type QuestionCategory =
   | "technical"
@@ -35,9 +36,36 @@ interface GenerateQuestionsInput {
   requirements: Requirement[];
   companyBrief: CompanyBrief;
   category: QuestionCategory;
+  interviewResearch?: InterviewResearch;
+}
 
-  // We'll connect our public interview research later.
-  interviewContext?: string;
+function buildInterviewResearchContext(
+  research?: InterviewResearch
+): string {
+  if (!research?.found || research.sources.length === 0) {
+    return `
+No reliable public interview-process information was found.
+Do not invent company-specific interview rounds or questions.
+`;
+  }
+
+  return research.sources
+    .slice(0, 3)
+    .map((source) => {
+      const evidence = source.evidence
+        .slice(0, 3)
+        .map((item) => `- ${item}`)
+        .join("\n");
+
+      return `
+Source: ${source.title}
+URL: ${source.url}
+
+Evidence:
+${evidence}
+`;
+    })
+    .join("\n");
 }
 
 function getRelevantRequirements(
@@ -74,7 +102,7 @@ export async function generateQuestionsForCategory({
   requirements,
   companyBrief,
   category,
-  interviewContext,
+  interviewResearch,
 }: GenerateQuestionsInput): Promise<Question[]> {
   const relevantRequirements =
     getRelevantRequirements(requirements, category);
@@ -89,6 +117,16 @@ export async function generateQuestionsForCategory({
         `${r.id} | ${r.priority} | ${r.kind} | ${r.text}`
     )
     .join("\n");
+
+  const interviewContext =
+    category === "behavioural" ||
+    category === "company-fit"
+      ? buildInterviewResearchContext(
+          interviewResearch
+        )
+      : `
+Public interview research is not needed for this category.
+`;
 
   const completion = await withRetry(() =>
     groq.chat.completions.create({
@@ -176,11 +214,14 @@ ${companyBrief.what_they_do}
 
 
 PUBLIC INTERVIEW RESEARCH:
+${interviewContext}
 
-${
-  interviewContext ||
-  "No reliable public interview-process information is currently available."
-}
+Rules:
+- Treat the research as supporting evidence only.
+- Do not claim an interview stage exists unless the evidence supports it.
+- Do not copy candidate-reported questions verbatim.
+- Use the evidence to make preparation questions more relevant.
+- If no reliable interview research exists, rely only on the JD and company brief.
           `.trim(),
         },
       ],
@@ -231,35 +272,36 @@ ${
       difficulty: q.difficulty,
     }));
 }
+
 export async function generateAllQuestions(
-    requirements: Requirement[],
-    companyBrief: CompanyBrief,
-    interviewContext?: string
-  ): Promise<Question[]> {
-    const categories: QuestionCategory[] = [
-      "technical",
-      "behavioural",
-      "system-design",
-      "company-fit",
-    ];
-  
-    const allQuestions: Question[] = [];
-  
-    for (const category of categories) {
-      console.log(`Generating ${category} questions...`);
-  
-      const questions = await generateQuestionsForCategory({
-        requirements,
-        companyBrief,
-        category,
-        interviewContext,
-      });
-  
-      allQuestions.push(...questions);
-    }
-  
-    return allQuestions.map((question, index) => ({
-      ...question,
-      id: `q${index + 1}`,
-    }));
+  requirements: Requirement[],
+  companyBrief: CompanyBrief,
+  interviewResearch?: InterviewResearch
+): Promise<Question[]> {
+  const categories: QuestionCategory[] = [
+    "technical",
+    "behavioural",
+    "system-design",
+    "company-fit",
+  ];
+
+  const allQuestions: Question[] = [];
+
+  for (const category of categories) {
+    console.log(`Generating ${category} questions...`);
+
+    const questions = await generateQuestionsForCategory({
+      requirements,
+      companyBrief,
+      category,
+      interviewResearch,
+    });
+
+    allQuestions.push(...questions);
   }
+
+  return allQuestions.map((question, index) => ({
+    ...question,
+    id: `q${index + 1}`,
+  }));
+}

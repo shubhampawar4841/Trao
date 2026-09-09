@@ -58,45 +58,6 @@ function inferCompanyName(
   }
 }
 
-function buildInterviewContext(
-  research: Awaited<
-    ReturnType<typeof researchInterviewProcess>
-  >
-): string {
-  if (!research.found || research.sources.length === 0) {
-    return research.note;
-  }
-
-  const sourceBlocks = research.sources
-    .map((source, index) => {
-      const evidence =
-        source.evidence.length > 0
-          ? source.evidence
-              .map((line) => `  - ${line}`)
-              .join("\n")
-          : "  - No excerpt available";
-
-      return [
-        `SOURCE ${index + 1}`,
-        `Type: ${source.source_type}`,
-        `Title: ${source.title}`,
-        `URL: ${source.url}`,
-        "Evidence:",
-        evidence,
-      ].join("\n");
-    })
-    .join("\n\n");
-
-  return [
-    research.note,
-    "",
-    "Use ONLY the verified evidence below.",
-    "Do not invent interview rounds or processes that are not present.",
-    "",
-    sourceBlocks,
-  ].join("\n");
-}
-
 export async function runPipeline({
   jd,
   company_url,
@@ -148,8 +109,9 @@ export async function runPipeline({
       role.title
     );
 
-  const interviewContext =
-    buildInterviewContext(interviewResearch);
+  console.log(
+    `Pipeline: interview research found=${interviewResearch.found} sources=${interviewResearch.sources.length}`
+  );
 
   console.log("Pipeline: generating questions");
 
@@ -157,7 +119,7 @@ export async function runPipeline({
     await generateAllQuestions(
       role.requirements,
       companyBrief,
-      interviewContext
+      interviewResearch
     );
 
   console.log("Pipeline: checking coverage");
@@ -184,10 +146,16 @@ export async function runPipeline({
     days
   );
 
-  const pagesUsed = [
-    crawl.homepage.url,
-    ...crawl.pages.map((page) => page.url),
-  ];
+  const pagesUsed = Array.from(
+    new Set([
+      company_url,
+      crawl.homepage.url,
+      ...crawl.pages.map((page) => page.url),
+      ...interviewResearch.sources.map(
+        (source) => source.url
+      ),
+    ])
+  );
 
   const kit: Kit = {
     source: {

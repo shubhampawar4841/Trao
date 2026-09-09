@@ -1,0 +1,338 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-09-09T05:59:17.092Z",
+  "kits": [
+    {
+      "id": "case-trao-swe",
+      "status": "ok",
+      "kit": {
+        "source": {
+          "company": "Trao",
+          "company_url": "https://www.trao.ai",
+          "role": "Software Engineer",
+          "location": "",
+          "jd_chars": 262,
+          "researched_at": "2026-09-09T05:59:17.084Z",
+          "pages_used": [
+            "https://www.trao.ai",
+            "https://www.trao.ai/",
+            "https://www.trao.ai/careers",
+            "https://www.jobaaj.com/company/trao-careers"
+          ]
+        },
+        "company_brief": {
+          "summary": "Trao is an AI research and development lab that builds autonomous AI systems for governments, enterprises, and mid‑market organizations. The company embeds itself within client organizations to study existing workflows and then redesigns them with AI, aiming for 10× productivity gains and full process automation.",
+          "what_they_do": "Trao designs, builds, and deploys AI agents that understand real goals and execute end‑to‑end work, automates multi‑step human processes, adds enterprise‑wide judgment layers, and creates AI‑native products from scratch. Their focus is on autonomous agents, automation, enterprise intelligence, and AI‑native solutions that give clients capabilities competitors will not have for years.",
+          "sources": [
+            "https://www.trao.ai/",
+            "https://www.trao.ai/careers"
+          ]
+        },
+        "role": {
+          "title": "Software Engineer",
+          "seniority": "",
+          "responsibilities": [],
+          "requirements": [
+            {
+              "id": "r1",
+              "text": "Strong React experience",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r2",
+              "text": "Experience building APIs with Node.js and Express",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r3",
+              "text": "Good communication and collaboration skills",
+              "kind": "behavioural",
+              "priority": "must"
+            },
+            {
+              "id": "r4",
+              "text": "Docker experience",
+              "kind": "technical",
+              "priority": "nice"
+            }
+          ]
+        },
+        "questions": [
+          {
+            "id": "q1",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "technical",
+            "prompt": "Describe how you would structure a large‑scale React application to support dynamic component loading and code splitting. What patterns and libraries would you use, and how would you handle state management across dynamically loaded modules?",
+            "answer_outline": "Use React.lazy and Suspense for dynamic imports, configure Webpack or Vite for code splitting, employ React Router for route‑based loading, and manage shared state with Redux Toolkit or React Context. Discuss hydration for SSR, handling of loading states, and ensuring type safety with TypeScript. Highlight performance considerations such as bundle size, prefetching, and avoiding unnecessary re‑renders.",
+            "difficulty": 2
+          },
+          {
+            "id": "q2",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "technical",
+            "prompt": "Explain how you would implement a custom hook that manages form validation for a complex form with nested fields. What considerations would you take into account for performance and reusability?",
+            "answer_outline": "Show a hook using useReducer or useState with a validation schema (Yup or custom). Use useCallback and useMemo to memoize handlers, debounce validation, and expose a clean API (values, errors, handleChange, handleSubmit). Discuss handling nested fields with dot notation, reusability via generic types, and performance by avoiding re‑renders of unrelated components.",
+            "difficulty": 2
+          },
+          {
+            "id": "q3",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "technical",
+            "prompt": "Walk me through designing a RESTful API with Node.js and Express that supports pagination, filtering, and sorting for a resource with many‑to‑many relationships. How would you structure the routes, middleware, and database queries to ensure scalability?",
+            "answer_outline": "Outline route design (GET /items with query params), validation middleware (Joi or express-validator), async/await error handling, use of an ORM (Prisma/Sequelize) with eager loading and proper indexes. Explain pagination strategies (offset vs cursor), filtering via query builder, sorting with safe fields, and caching or rate limiting for scalability.",
+            "difficulty": 3
+          },
+          {
+            "id": "q4",
+            "requirement_ids": [
+              "r4"
+            ],
+            "category": "technical",
+            "prompt": "How would you containerize a React front‑end and a Node.js API using Docker? Describe the Dockerfile for each, how you would handle environment variables, and how you would orchestrate them for local development.",
+            "answer_outline": "Provide a React Dockerfile using node:14 as builder, npm install, npm run build, serve with nginx. Provide a Node Dockerfile using node:14, copy, npm install, expose port 3000, CMD. Show env handling via .env files, docker‑compose with services, volumes for hot reload, port mapping, and env_file for variables.",
+            "difficulty": 2
+          },
+          {
+            "id": "q5",
+            "requirement_ids": [
+              "r3"
+            ],
+            "category": "behavioural",
+            "prompt": "Describe a situation where you had to coordinate with a cross‑functional team to deliver a project on time. What was your role, how did you ensure clear communication, and what was the outcome?",
+            "answer_outline": "Situation: brief context of the project and team composition.\nTask: your specific responsibilities.\nAction: steps taken to facilitate communication (e.g., regular stand‑ups, shared docs, stakeholder updates), tools used, and how you addressed any information gaps.\nResult: measurable outcome (e.g., delivered on schedule, exceeded performance targets, improved team satisfaction).",
+            "difficulty": 2
+          },
+          {
+            "id": "q6",
+            "requirement_ids": [
+              "r3"
+            ],
+            "category": "behavioural",
+            "prompt": "Tell me about a time when a disagreement arose within your team about the direction of a project. How did you handle the conflict and what was the result?",
+            "answer_outline": "Situation: context of the disagreement.\nTask: your role in mediating.\nAction: techniques used (active listening, data‑driven discussion, compromise, escalation if needed), communication methods employed.\nResult: resolution achieved, impact on project and team dynamics.",
+            "difficulty": 2
+          },
+          {
+            "id": "q7",
+            "requirement_ids": [
+              "r3"
+            ],
+            "category": "behavioural",
+            "prompt": "Explain how you have adapted your communication style when working with stakeholders who have limited technical knowledge. Provide an example and the impact it had on the project.",
+            "answer_outline": "Situation: stakeholder group and project context.\nTask: need to convey complex ideas.\nAction: specific strategies (simplifying language, using analogies, visual aids, checking for understanding), tools used, and how you ensured clarity.\nResult: improved stakeholder engagement, decision‑making speed, or project success metrics.",
+            "difficulty": 3
+          },
+          {
+            "id": "q8",
+            "requirement_ids": [
+              "r1",
+              "r2"
+            ],
+            "category": "system-design",
+            "prompt": "Design a full‑stack architecture for a web platform that allows users to create, train, and deploy autonomous AI agents. The front‑end must be built with React and the back‑end with Node.js/Express. Discuss how you would structure the application to support real‑time interaction, secure authentication, and easy scalability.",
+            "answer_outline": "1. High‑level components: React SPA, Node.js/Express API, WebSocket layer, authentication service, database, AI agent runtime. 2. React architecture: component hierarchy, state management (Redux/Context), routing, lazy loading, error boundaries. 3. API design: REST endpoints for CRUD on agents, WebSocket endpoints for real‑time status updates, authentication middleware (JWT). 4. Data persistence: relational DB for user data, NoSQL for agent logs. 5. Scalability: stateless API servers behind load balancer, horizontal scaling, caching (Redis). 6. Security: HTTPS, CORS, rate limiting, input validation, role‑based access control. 7. Deployment: containerization (Docker), CI/CD pipeline, monitoring (Prometheus/Grafana). 8. Trade‑offs: monolith vs microservices, WebSocket vs polling, database choice.",
+            "difficulty": 3
+          },
+          {
+            "id": "q9",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "system-design",
+            "prompt": "You are tasked with designing an API layer in Node.js/Express that will serve as the backbone for an AI agent orchestration system. The API must handle agent lifecycle management, task queue integration, and real‑time status updates. Outline the architecture, key endpoints, and how you would ensure high availability and fault tolerance.",
+            "answer_outline": "1. Core services: Agent Service, Task Queue Service, Status Service. 2. API endpoints: POST /agents, GET /agents/:id, PUT /agents/:id, DELETE /agents/:id; POST /tasks, GET /tasks/:id, PATCH /tasks/:id; GET /agents/:id/status. 3. Real‑time updates: WebSocket or Server‑Sent Events for status push. 4. Task queue: integrate with RabbitMQ or Kafka, decouple workers. 5. High availability: stateless Express servers behind load balancer, database replication, queue clustering. 6. Fault tolerance: circuit breaker pattern, retry logic, graceful degradation. 7. Security: API keys, OAuth2, input validation. 8. Monitoring: health checks, metrics, logging.",
+            "difficulty": 3
+          },
+          {
+            "id": "q10",
+            "requirement_ids": [
+              "r4"
+            ],
+            "category": "system-design",
+            "prompt": "Explain how you would use Docker to containerize a React front‑end, a Node.js/Express API, and a background worker that processes AI agent tasks. Include details on Dockerfile best practices, multi‑stage builds, and orchestration with Docker Compose or Kubernetes.",
+            "answer_outline": "1. Dockerfile structure: base image, dependencies, build stage for React, copy build artifacts, runtime stage. 2. Node.js API Dockerfile: use node:18-alpine, copy package.json, install, copy src, expose port. 3. Worker Dockerfile: similar to API, entrypoint to worker script. 4. Multi‑stage builds: separate build and runtime layers to reduce image size. 5. Docker Compose: services for frontend, api, worker, database, queue; volumes, networks, environment variables. 6. Kubernetes alternative: Docker images pushed to registry, Deployments, Services, ConfigMaps, Secrets. 7. Best practices: use .dockerignore, keep images small, use multi‑arch if needed, health checks, logging.",
+            "difficulty": 2
+          },
+          {
+            "id": "q11",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "company-fit",
+            "prompt": "How have you leveraged your strong React experience to build user interfaces that integrate with AI-driven backend services, and how would you apply that at Trao to create intuitive interfaces for autonomous agents?",
+            "answer_outline": "- Discuss specific React projects involving AI or complex data visualization\n- Explain integration with REST/GraphQL APIs\n- Highlight performance optimization and accessibility\n- Connect to Trao’s goal of 10× productivity gains by simplifying user interactions",
+            "difficulty": 2
+          },
+          {
+            "id": "q12",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "company-fit",
+            "prompt": "Describe a time when you built an API with Node.js and Express that needed to handle high concurrency and secure data exchange. How would you adapt that experience to support Trao's AI agent communication with client systems?",
+            "answer_outline": "- Outline architecture (routing, middleware, clustering)\n- Detail security measures (JWT, rate limiting, input validation)\n- Explain scaling strategies (horizontal scaling, load balancers)\n- Relate to Trao’s need for reliable, secure agent interactions",
+            "difficulty": 2
+          },
+          {
+            "id": "q13",
+            "requirement_ids": [
+              "r3"
+            ],
+            "category": "company-fit",
+            "prompt": "Trao emphasizes collaboration across client organizations. Can you give an example of how your communication and collaboration skills helped align cross-functional teams on a complex AI project?",
+            "answer_outline": "- Describe project scope and stakeholders\n- Highlight communication channels (stand-ups, demos, documentation)\n- Show conflict resolution or negotiation tactics\n- Tie back to Trao’s embedded-client model",
+            "difficulty": 1
+          },
+          {
+            "id": "q14",
+            "requirement_ids": [
+              "r4"
+            ],
+            "category": "company-fit",
+            "prompt": "Trao's AI solutions often require containerization. Even though Docker is a nice-to-have, how would you incorporate Docker into your development workflow to ensure consistent deployment of React frontends and Node APIs?",
+            "answer_outline": "- Explain Dockerfile structure for React and Node\n- Discuss multi-stage builds and image optimization\n- Mention CI/CD integration (GitHub Actions, GitLab CI)\n- Emphasize reproducibility and environment parity",
+            "difficulty": 2
+          },
+          {
+            "id": "q15",
+            "requirement_ids": [
+              "r1",
+              "r2",
+              "r3"
+            ],
+            "category": "company-fit",
+            "prompt": "Trao aims for 10× productivity gains. How would you use your React and Node.js expertise to design a system that automates a multi-step human process, and what role would communication play in that?",
+            "answer_outline": "- Identify a repetitive workflow and map steps to UI and API\n- Propose automation logic (state machines, AI agents)\n- Discuss data flow, error handling, and user feedback\n- Emphasize stakeholder communication for requirement gathering and iterative delivery",
+            "difficulty": 3
+          }
+        ],
+        "flashcards": [
+          {
+            "id": "f1",
+            "front": "What React patterns do you use for state management?",
+            "back": "Use hooks like useState, useReducer, or context API for local state; Redux or Zustand for global state.",
+            "requirement_ids": [
+              "r1"
+            ]
+          },
+          {
+            "id": "f2",
+            "front": "How do you handle component re-renders in React?",
+            "back": "Use memoization with React.memo, useCallback, useMemo; avoid anonymous functions in JSX; key props.",
+            "requirement_ids": [
+              "r1"
+            ]
+          },
+          {
+            "id": "f3",
+            "front": "Describe your approach to building RESTful APIs with Node.js and Express?",
+            "back": "Define routes, use middleware for validation/auth, separate controllers, use async/await, handle errors centrally.",
+            "requirement_ids": [
+              "r2"
+            ]
+          },
+          {
+            "id": "f4",
+            "front": "How do you structure an Express project for scalability?",
+            "back": "Use MVC or layered architecture, separate routes, controllers, services, models; use environment configs.",
+            "requirement_ids": [
+              "r2"
+            ]
+          },
+          {
+            "id": "f5",
+            "front": "Give an example of effective communication in a cross-functional team?",
+            "back": "Regular stand-ups, clear documentation, active listening, using collaboration tools like Slack/Teams.",
+            "requirement_ids": [
+              "r3"
+            ]
+          },
+          {
+            "id": "f6",
+            "front": "How do you handle conflict resolution during collaboration?",
+            "back": "Address issues early, focus on facts, seek compromise, involve stakeholders if needed.",
+            "requirement_ids": [
+              "r3"
+            ]
+          },
+          {
+            "id": "f7",
+            "front": "What Docker concepts are you familiar with?",
+            "back": "Dockerfile best practices, multi-stage builds, container networking, volume management.",
+            "requirement_ids": [
+              "r4"
+            ]
+          }
+        ],
+        "schedule": {
+          "days_available": 5,
+          "days": [
+            {
+              "day": 1,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q3",
+                "q1",
+                "q12"
+              ],
+              "minutes": 50
+            },
+            {
+              "day": 2,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q7",
+                "q2",
+                "q13"
+              ],
+              "minutes": 45
+            },
+            {
+              "day": 3,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q8",
+                "q5",
+                "q4"
+              ],
+              "minutes": 50
+            },
+            {
+              "day": 4,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q9",
+                "q6",
+                "q10"
+              ],
+              "minutes": 50
+            },
+            {
+              "day": 5,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q15",
+                "q11",
+                "q14"
+              ],
+              "minutes": 50
+            }
+          ]
+        },
+        "coverage": {
+          "uncovered_requirement_ids": [],
+          "passes": 1
+        }
+      },
+      "error": null
+    }
+  ]
+}
