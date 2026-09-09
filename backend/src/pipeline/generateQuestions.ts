@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { groq, GROQ_MODEL } from "../utils/groq";
 import { withRetry } from "../utils/retry";
+import { isStructuredOutputTruncation } from "../utils/structuredOutput";
 import type {
   Question,
   Requirement,
@@ -13,6 +14,9 @@ type QuestionCategory =
   | "behavioural"
   | "system-design"
   | "company-fit";
+
+const MAX_QUESTIONS_PER_CATEGORY = 4;
+const MAX_COMPLETION_TOKENS = 3000;
 
 const GeneratedQuestionsSchema = z.object({
   questions: z.array(
@@ -99,12 +103,19 @@ function getRelevantRequirements(
   }
 }
 
-export async function generateQuestionsForCategory({
-  requirements,
-  companyBrief,
-  category,
-  interviewResearch,
-}: GenerateQuestionsInput): Promise<Question[]> {
+async function requestQuestionsForCategory(
+  input: GenerateQuestionsInput & {
+    maxQuestions: number;
+  }
+): Promise<Question[]> {
+  const {
+    requirements,
+    companyBrief,
+    category,
+    interviewResearch,
+    maxQuestions,
+  } = input;
+
   const relevantRequirements =
     getRelevantRequirements(requirements, category);
 
@@ -134,6 +145,7 @@ Public interview research is not needed for this category.
       model: GROQ_MODEL,
 
       temperature: 0.3,
+      max_completion_tokens: MAX_COMPLETION_TOKENS,
 
       response_format: {
         type: "json_object",
@@ -156,6 +168,9 @@ IMPORTANT RULES:
 - Prefer must-have requirements over nice-to-have requirements.
 - Questions should resemble realistic interview questions.
 - Do not repeat the same question in different wording.
+- Generate at most ${maxQuestions} questions for this category.
+- Keep each prompt concise.
+- Keep each answer_outline short (1-3 brief bullet points).
 - difficulty must be an integer:
   1 = basic
   2 = intermediate
@@ -218,6 +233,7 @@ PUBLIC INTERVIEW RESEARCH:
 ${interviewContext}
 
 Rules:
+- Return at most ${maxQuestions} questions.
 - Treat the research as supporting evidence only.
 - Do not claim an interview stage exists unless the evidence supports it.
 - Do not copy candidate-reported questions verbatim.
@@ -256,7 +272,6 @@ Rules:
   );
 
   return parsed.questions
-    // Throw away any hallucinated requirement IDs
     .filter(
       (q) =>
         q.requirement_ids.length > 0 &&
@@ -264,6 +279,7 @@ Rules:
           validRequirementIds.has(id)
         )
     )
+    .slice(0, maxQuestions)
     .map((q, index) => ({
       id: `${category}-${index + 1}`,
       requirement_ids: q.requirement_ids,
@@ -272,6 +288,44 @@ Rules:
       answer_outline: q.answer_outline,
       difficulty: q.difficulty,
     }));
+}
+
+export async function generateQuestionsForCategory(
+  input: GenerateQuestionsInput
+): Promise<Question[]> {
+  const limits = [
+    MAX_QUESTIONS_PER_CATEGORY,
+    Math.max(2, Math.floor(MAX_QUESTIONS_PER_CATEGORY / 2)),
+  ];
+
+  let lastError: unknown;
+
+  for (let i = 0; i < limits.length; i++) {
+    const maxQuestions = limits[i];
+
+    try {
+      return await requestQuestionsForCategory({
+        ...input,
+        maxQuestions,
+      });
+    } catch (error) {
+      lastError = error;
+
+      const canShrink =
+        i < limits.length - 1 &&
+        isStructuredOutputTruncation(error);
+
+      if (!canShrink) {
+        throw error;
+      }
+
+      console.warn(
+        `Truncated ${input.category} question JSON. Retrying with max ${limits[i + 1]} questions.`
+      );
+    }
+  }
+
+  throw lastError;
 }
 
 export async function generateAllQuestions(

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { groq, GROQ_MODEL } from "../utils/groq";
 import { withRetry } from "../utils/retry";
+import { isStructuredOutputTruncation } from "../utils/structuredOutput";
 import type {
   Flashcard,
   Requirement,
@@ -16,13 +17,13 @@ const FlashcardsSchema = z.object({
   ),
 });
 
-export async function generateFlashcards(
-  requirements: Requirement[]
-): Promise<Flashcard[]> {
-  if (requirements.length === 0) {
-    return [];
-  }
+const MAX_FLASHCARDS = 10;
+const MAX_COMPLETION_TOKENS = 3000;
 
+async function requestFlashcards(
+  requirements: Requirement[],
+  maxFlashcards: number
+): Promise<Flashcard[]> {
   const requirementBlock = requirements
     .map(
       (r) =>
@@ -34,6 +35,7 @@ export async function generateFlashcards(
     groq.chat.completions.create({
       model: GROQ_MODEL,
       temperature: 0.2,
+      max_completion_tokens: MAX_COMPLETION_TOKENS,
 
       response_format: {
         type: "json_object",
@@ -52,8 +54,9 @@ RULES:
 - Never create requirement ids yourself.
 - Prefer must-have requirements.
 - Keep the front concise and question-like.
-- Keep the back useful but brief.
-- Create roughly 1-2 flashcards per important requirement.
+- Keep the back useful but brief (1-3 short sentences).
+- Generate at most ${maxFlashcards} flashcards total.
+- Prefer one strong card per important requirement over many weak cards.
 
 Flashcards should help the candidate prepare for the interview.
 
@@ -92,6 +95,8 @@ Expected shape:
 REQUIREMENTS:
 
 ${requirementBlock}
+
+Return at most ${maxFlashcards} flashcards.
           `.trim(),
         },
       ],
@@ -132,6 +137,7 @@ ${requirementBlock}
           validRequirementIds.has(id)
         )
     )
+    .slice(0, maxFlashcards)
     .map((flashcard, index) => ({
       id: `f${index + 1}`,
       front: flashcard.front,
@@ -139,4 +145,46 @@ ${requirementBlock}
       requirement_ids:
         flashcard.requirement_ids,
     }));
+}
+
+export async function generateFlashcards(
+  requirements: Requirement[]
+): Promise<Flashcard[]> {
+  if (requirements.length === 0) {
+    return [];
+  }
+
+  const limits = [
+    MAX_FLASHCARDS,
+    Math.max(5, Math.floor(MAX_FLASHCARDS / 2)),
+  ];
+
+  let lastError: unknown;
+
+  for (let i = 0; i < limits.length; i++) {
+    const maxFlashcards = limits[i];
+
+    try {
+      return await requestFlashcards(
+        requirements,
+        maxFlashcards
+      );
+    } catch (error) {
+      lastError = error;
+
+      const canShrink =
+        i < limits.length - 1 &&
+        isStructuredOutputTruncation(error);
+
+      if (!canShrink) {
+        throw error;
+      }
+
+      console.warn(
+        `Truncated flashcard JSON. Retrying with max ${limits[i + 1]} flashcards.`
+      );
+    }
+  }
+
+  throw lastError;
 }

@@ -43,6 +43,7 @@ ${page.text.slice(0, MAX_CHARS_PER_PAGE)}
     groq.chat.completions.create({
       model: GROQ_MODEL,
       temperature: 0.1,
+      max_completion_tokens: 2000,
 
       response_format: {
         type: "json_object",
