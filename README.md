@@ -81,7 +81,7 @@ JD + company_url + days
 2. crawlCompany                 (Axios + Cheerio)
         │
         ▼
-3. generateCompanyBrief         (Groq)
+3. generateCompanyBrief         (Groq; ≤4k chars/page, ≤16k combined research)
         │
         ▼
 4. researchInterviewProcess     (Firecrawl Search → rank → scrape top hits)
@@ -215,7 +215,7 @@ PORT=5000
 MONGODB_URI=mongodb+srv://...
 JWT_SECRET=replace-with-a-long-random-string
 GROQ_API_KEY=...
-GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_MODEL=openai/gpt-oss-20b
 FIRECRAWL_API_KEY=...
 
 # Optional: allow localhost / private company URLs (local fixtures only)
@@ -225,7 +225,7 @@ FIRECRAWL_API_KEY=...
 | Variable | Required for | Notes |
 |----------|--------------|--------|
 | `GROQ_API_KEY` | Pipeline / evaluate / API | LLM calls |
-| `GROQ_MODEL` | Optional | Defaults to `llama-3.3-70b-versatile` |
+| `GROQ_MODEL` | Optional | Defaults to `openai/gpt-oss-20b` |
 | `FIRECRAWL_API_KEY` | Interview research | Loaded by Firecrawl util |
 | `MONGODB_URI` | API server | Not required for CLI evaluate |
 | `JWT_SECRET` | Auth | Cookie signing |
@@ -341,7 +341,7 @@ npx tsc --noEmit
 | Deterministic schedule | Stable, testable, no extra LLM cost |
 | Cookie JWT auth | Simple SPA auth without storing tokens in JS |
 | Shared pipeline for web + evaluate | Evaluator scores the real product path |
-| Duplicate completed submissions reuse an existing kit | Same user + JD + company URL + days → DB hit instead of extra crawl/LLM/Firecrawl spend (not cross-instance concurrency-safe) |
+| Keep `openai/gpt-oss-20b`; trim research prompts | Free-tier TPM (~8k/min) is the constraint, not context window |
 
 ---
 

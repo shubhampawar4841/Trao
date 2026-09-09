@@ -11,6 +11,10 @@ const CompanyBriefSchema = z.object({
 
 export type CompanyBrief = z.infer<typeof CompanyBriefSchema>;
 
+/** Keep prompts under free-tier TPM limits (not model context). */
+const MAX_CHARS_PER_PAGE = 4000;
+const MAX_RESEARCH_CHARS = 16000;
+
 export async function generateCompanyBrief(
   crawl: CrawlResult
 ): Promise<CompanyBrief> {
@@ -27,10 +31,11 @@ URL: ${page.url}
 TITLE: ${page.title}
 
 CONTENT:
-${page.text.slice(0, 8000)}
+${page.text.slice(0, MAX_CHARS_PER_PAGE)}
       `.trim();
     })
-    .join("\n\n---\n\n");
+    .join("\n\n---\n\n")
+    .slice(0, MAX_RESEARCH_CHARS);
 
   const allowedSources = allPages.map((page) => page.url);
 

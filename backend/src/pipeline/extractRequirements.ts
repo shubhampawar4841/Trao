@@ -25,9 +25,17 @@ export interface ExtractedRole {
 
 const MAX_STRUCTURED_OUTPUT_ATTEMPTS = 2;
 
+/** Soft cap for extreme JDs; normal postings stay intact. */
+const MAX_JD_CHARS = 20000;
+
 export async function extractRequirements(
   jd: string
 ): Promise<ExtractedRole> {
+  const jdForModel =
+    jd.length > MAX_JD_CHARS
+      ? jd.slice(0, MAX_JD_CHARS)
+      : jd;
+
   let lastError: unknown;
 
   for (
@@ -83,7 +91,7 @@ Return JSON only in this exact shape:
               content: `
 JOB DESCRIPTION:
 
-${jd}
+${jdForModel}
               `.trim(),
             },
           ],

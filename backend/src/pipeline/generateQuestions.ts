@@ -54,18 +54,19 @@ Do not invent company-specific interview rounds or questions.
     .map((source) => {
       const evidence = source.evidence
         .slice(0, 3)
-        .map((item) => `- ${item}`)
+        .map((item) => `- ${item.slice(0, 400)}`)
         .join("\n");
 
       return `
-Source: ${source.title}
+Source: ${source.title.slice(0, 200)}
 URL: ${source.url}
 
 Evidence:
 ${evidence}
 `;
     })
-    .join("\n");
+    .join("\n")
+    .slice(0, 6000);
 }
 
 function getRelevantRequirements(

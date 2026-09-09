@@ -12,4 +12,4 @@ export const groq = new Groq({
 });
 
 export const GROQ_MODEL =
-  process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+  process.env.GROQ_MODEL || "openai/gpt-oss-20b";
