@@ -1,0 +1,186 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-09-09T08:32:16.834Z",
+  "kits": [
+    {
+      "id": "thin-jd",
+      "status": "ok",
+      "kit": {
+        "source": {
+          "company": "Trao",
+          "company_url": "https://www.trao.ai",
+          "role": "Software Engineer",
+          "location": "",
+          "jd_chars": 58,
+          "researched_at": "2026-09-09T08:32:16.829Z",
+          "pages_used": [
+            "https://www.trao.ai",
+            "https://www.trao.ai/",
+            "https://www.trao.ai/careers",
+            "https://www.jobaaj.com/company/trao-careers"
+          ]
+        },
+        "company_brief": {
+          "summary": "Trao is an AI research and development laboratory that embeds itself within organizations to study and rebuild their workflows with artificial intelligence, aiming to deliver 10‑fold productivity gains, full process automation, and long‑term competitive advantages. The company serves governments, enterprises, and mid‑market clients worldwide, boasting a decade of combined experience and a presence in over 85 countries.",
+          "what_they_do": "Trao designs, builds, and deploys autonomous AI agents that understand real goals and execute end‑to‑end work, transforms multi‑step human processes into self‑running automation, provides enterprise‑wide intelligence layers that interpret an organization’s own data and systems, and creates AI‑native products built from scratch around the capabilities of autonomous systems.",
+          "sources": [
+            "https://www.trao.ai/",
+            "https://www.trao.ai/careers"
+          ]
+        },
+        "role": {
+          "title": "Software Engineer",
+          "seniority": "",
+          "responsibilities": [],
+          "requirements": [
+            {
+              "id": "r1",
+              "text": "Experience with Python",
+              "kind": "technical",
+              "priority": "must"
+            }
+          ]
+        },
+        "questions": [
+          {
+            "id": "q1",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "technical",
+            "prompt": "Describe how you would implement a thread‑safe cache in Python for a high‑concurrency web service. Which libraries or modules would you use, and how would you ensure data consistency and performance?",
+            "answer_outline": "- Use built‑in `threading` module: `threading.Lock` or `RLock` to guard shared data structures.\n- Store cache entries in a `dict` or `collections.OrderedDict` for LRU behavior.\n- Wrap cache operations (`get`, `set`, `delete`) inside `with lock:` blocks.\n- For higher scalability, consider `concurrent.futures.ThreadPoolExecutor` to offload expensive computations.\n- If persistence or cross‑process sharing is needed, use an external store like Redis with `redis-py` and Lua scripts for atomic operations.\n- Discuss cache eviction policies (LRU, LFU) and how to implement them efficiently.\n- Mention potential pitfalls: deadlocks, race conditions, and how to avoid them.\n- Highlight testing strategies: unit tests with `unittest.mock`, integration tests with a real Redis instance, and concurrency stress tests using `pytest-xdist` or `threading`.\n- Conclude with trade‑offs between in‑memory vs. external cache and when to choose each.",
+            "difficulty": 2
+          },
+          {
+            "id": "q2",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "system-design",
+            "prompt": "How would you design a job scheduling system that can handle thousands of AI agent tasks, ensuring reliability and scalability, using Python? Consider task persistence, worker scaling, fault tolerance, and monitoring.",
+            "answer_outline": "- Use a durable message broker (e.g., RabbitMQ, Kafka) to queue tasks.\n- Persist task metadata in a relational or NoSQL DB (PostgreSQL, DynamoDB) for idempotency.\n- Implement worker pools with auto‑scaling (e.g., Kubernetes deployments, AWS ECS).\n- Use retry logic with exponential backoff and dead‑letter queues.\n- Expose health checks and metrics (Prometheus, Grafana) for observability.\n- Provide a REST/GraphQL API for task submission and status querying.",
+            "difficulty": 3
+          },
+          {
+            "id": "q3",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "system-design",
+            "prompt": "Describe how you would build a Python-based data ingestion pipeline that can ingest, validate, transform, and store millions of sensor records per day, while maintaining data integrity and low latency.",
+            "answer_outline": "- Ingest data via a streaming platform (Kafka, Pulsar) with Python consumers.\n- Validate records using schema validation (Avro, JSON Schema) and reject or route bad data.\n- Transform data in micro‑batch or stream processing (Apache Flink, Spark Structured Streaming) written in PySpark.\n- Store transformed data in a scalable storage layer (Parquet on S3, ClickHouse, BigQuery).\n- Use a CDC mechanism to keep downstream systems in sync.\n- Implement monitoring with metrics on throughput, latency, and error rates.",
+            "difficulty": 3
+          },
+          {
+            "id": "q4",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "system-design",
+            "prompt": "Explain how you would architect a microservice-based system in Python to support autonomous AI agents that transform multi‑step human processes into self‑running automation, covering service boundaries, communication, and deployment.",
+            "answer_outline": "- Define core services: Agent Orchestrator, Process Modeler, Execution Engine, Data Connector.\n- Use an API gateway (e.g., Kong, AWS API Gateway) for routing and authentication.\n- Employ an event bus (Kafka, NATS) for asynchronous communication.\n- Containerize services with Docker and orchestrate via Kubernetes.\n- Implement service discovery and load balancing.\n- Secure inter‑service traffic with mTLS and fine‑grained IAM policies.\n- Provide CI/CD pipelines and blue‑green deployment strategies.",
+            "difficulty": 3
+          },
+          {
+            "id": "q5",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "system-design",
+            "prompt": "How would you design a real‑time analytics dashboard that visualizes AI agent performance metrics, using Python for backend data processing and real‑time updates to the front end?",
+            "answer_outline": "- Collect metrics via a lightweight agent (Python) pushing to a time‑series DB (Prometheus, InfluxDB).\n- Aggregate data in a Python microservice using Pandas or Dask.\n- Expose a WebSocket or Server‑Sent Events endpoint for live updates.\n- Use a front‑end framework (React/Vue) to consume and render charts.\n- Cache recent aggregates in Redis for low‑latency.\n- Secure endpoints with JWT and enforce rate limiting.",
+            "difficulty": 2
+          },
+          {
+            "id": "q6",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "company-fit",
+            "prompt": "Trao focuses on building autonomous AI agents that transform multi‑step human processes into self‑running automation. Can you describe a Python‑based project where you designed or implemented a system that automates a complex workflow, and how that experience would translate to our work at Trao?",
+            "answer_outline": "Candidate should outline the problem, the workflow, the Python stack used (e.g., libraries, frameworks), how they automated the steps, any challenges (data integration, error handling), and the impact. They should then connect this to Trao’s autonomous agents, emphasizing how their automation mindset and Python skills would help design end‑to‑end AI workflows.",
+            "difficulty": 3
+          },
+          {
+            "id": "q7",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "company-fit",
+            "prompt": "Given Trao’s mission to embed AI within organizations to achieve 10‑fold productivity gains, how would you leverage your Python expertise to develop an AI‑native product from scratch? What steps would you take from research to deployment?",
+            "answer_outline": "Candidate should discuss research (literature review, prototyping), data pipeline design, model development in Python (e.g., PyTorch/TensorFlow), integration with existing systems, testing, deployment (Docker, CI/CD), monitoring, and iterative improvement. They should tie these steps to Trao’s focus on building AI‑native products and delivering rapid, scalable solutions.",
+            "difficulty": 3
+          },
+          {
+            "id": "q8",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "company-fit",
+            "prompt": "Trao serves governments, enterprises, and mid‑market clients worldwide. Describe a time when you used Python to build a solution that needed to scale across diverse environments or integrate with existing enterprise systems. How would that experience help you in our global, cross‑domain projects?",
+            "answer_outline": "Candidate should describe the project scope, the scaling challenges (e.g., multi‑tenant, high‑volume), the Python technologies used (e.g., microservices, APIs, orchestration), integration strategies (e.g., REST, message queues), and how they ensured reliability and security. They should explain how this experience aligns with Trao’s global client base and cross‑domain integration needs.",
+            "difficulty": 2
+          }
+        ],
+        "flashcards": [
+          {
+            "id": "f1",
+            "front": "What Python libraries are you most comfortable with for data manipulation?",
+            "back": "Mention pandas, NumPy, or similar, and give a brief example of usage.",
+            "requirement_ids": [
+              "r1"
+            ]
+          },
+          {
+            "id": "f2",
+            "front": "How do you handle exception handling in Python?",
+            "back": "Use try/except blocks, finally, and logging; show a concise code snippet.",
+            "requirement_ids": [
+              "r1"
+            ]
+          }
+        ],
+        "schedule": {
+          "days_available": 3,
+          "days": [
+            {
+              "day": 1,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q2",
+                "q6",
+                "q5"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 2,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q3",
+                "q7",
+                "q8"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 3,
+              "focus": "Interview preparation",
+              "question_ids": [
+                "q4",
+                "q1"
+              ],
+              "minutes": 35
+            }
+          ]
+        },
+        "coverage": {
+          "uncovered_requirement_ids": [],
+          "passes": 1
+        }
+      },
+      "error": null
+    }
+  ]
+}

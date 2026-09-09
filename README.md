@@ -264,7 +264,7 @@ CORS is configured for `http://localhost:3000` with credentials.
 | POST | `/api/auth/login` | Login + cookie |
 | POST | `/api/auth/logout` | Clear cookie |
 | GET | `/api/auth/me` | Current user |
-| POST | `/api/kits` | Generate + save kit |
+| POST | `/api/kits` | Generate + save kit (`reused: true` + 200 if identical completed input exists) |
 | GET | `/api/kits` | List kits |
 | GET | `/api/kits/:id` | Get kit |
 | PATCH/POST/DELETE | `/api/kits/:id/questions...` | Question CRUD / order / category regen |
@@ -339,6 +339,7 @@ npx tsc --noEmit
 | Deterministic schedule | Stable, testable, no extra LLM cost |
 | Cookie JWT auth | Simple SPA auth without storing tokens in JS |
 | Shared pipeline for web + evaluate | Evaluator scores the real product path |
+| Duplicate completed submissions reuse an existing kit | Same user + JD + company URL + days → DB hit instead of extra crawl/LLM/Firecrawl spend (not cross-instance concurrency-safe) |
 
 ---
 

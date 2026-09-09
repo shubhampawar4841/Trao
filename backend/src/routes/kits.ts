@@ -84,6 +84,42 @@ async function generateAndSaveKit(
   };
 }
 
+async function generateOrReuseKit(
+  userId: string,
+  input: CreateKitInput
+) {
+  const existingKit = await Kit.findOne({
+    userId,
+    status: "completed",
+    "input.jd": input.jd,
+    "input.companyUrl": input.company_url,
+    "input.days": input.days,
+  }).sort({
+    createdAt: -1,
+  });
+
+  if (existingKit) {
+    console.log(
+      "Duplicate submission detected — reusing existing kit"
+    );
+
+    return {
+      kit: existingKit,
+      reused: true as const,
+      diagnostics: undefined,
+    };
+  }
+
+  const { savedKit, diagnostics } =
+    await generateAndSaveKit(userId, input);
+
+  return {
+    kit: savedKit,
+    reused: false as const,
+    diagnostics,
+  };
+}
+
 const BatchCaseSchema =
   CreateKitSchema.extend({
     id: z
@@ -134,18 +170,22 @@ router.post(
         `Generating kit for user ${req.user!.id}`
       );
 
-      const { savedKit, diagnostics } =
-        await generateAndSaveKit(
-          req.user!.id,
-          {
-            jd,
-            company_url,
-            days,
-          }
-        );
+      const {
+        kit: savedKit,
+        reused,
+        diagnostics,
+      } = await generateOrReuseKit(
+        req.user!.id,
+        {
+          jd,
+          company_url,
+          days,
+        }
+      );
 
-      return res.status(201).json({
+      return res.status(reused ? 200 : 201).json({
         success: true,
+        reused,
 
         kit: {
           id: savedKit._id,
@@ -154,7 +194,9 @@ router.post(
           createdAt: savedKit.createdAt,
         },
 
-        diagnostics,
+        ...(diagnostics
+          ? { diagnostics }
+          : {}),
       });
     } catch (error) {
       console.error(
@@ -233,6 +275,7 @@ router.post(
       id: string;
       status: "ok" | "failed";
       kitId: string | null;
+      reused?: boolean;
       error: {
         code?: string;
         message: string;
@@ -245,23 +288,27 @@ router.post(
           `Batch: generating ${item.id} for user ${req.user!.id}`
         );
 
-        const savedKit =
-          await generateAndSaveKit(
-            req.user!.id,
-            {
-              jd: item.jd,
-              company_url:
-                item.company_url,
-              days: item.days,
-            }
-          );
+        const {
+          kit: savedKit,
+          reused,
+        } = await generateOrReuseKit(
+          req.user!.id,
+          {
+            jd: item.jd,
+            company_url:
+              item.company_url,
+            days: item.days,
+          }
+        );
 
         results.push({
           id: item.id,
           status: "ok",
 
           kitId:
-            savedKit.savedKit._id.toString(),
+            savedKit._id.toString(),
+
+          reused,
 
           error: null,
         });

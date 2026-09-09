@@ -21,13 +21,14 @@ const generationSteps = [
 
 interface CreateKitResponse {
   success: boolean;
+  reused?: boolean;
 
   kit: {
     id: string;
     status: string;
   };
 
-  diagnostics: PipelineDiagnostics;
+  diagnostics?: PipelineDiagnostics;
 }
 
 interface PipelineDiagnostics {
@@ -68,6 +69,7 @@ interface BatchCreateResponse {
     id: string;
     status: "ok" | "failed";
     kitId: string | null;
+    reused?: boolean;
     error: {
       code?: string;
       message: string;
@@ -111,6 +113,9 @@ export default function NewKitPage() {
     useState<PipelineDiagnostics | null>(
       null
     );
+
+  const [reusedExisting, setReusedExisting] =
+    useState(false);
 
   useEffect(() => {
     if (!loading) {
@@ -481,7 +486,12 @@ export default function NewKitPage() {
       setCompletedKitId(
         String(response.kit.id)
       );
-      setDiagnostics(response.diagnostics);
+      setReusedExisting(
+        Boolean(response.reused)
+      );
+      setDiagnostics(
+        response.diagnostics ?? null
+      );
       setLoading(false);
     } catch (err) {
       setError(
@@ -496,11 +506,12 @@ export default function NewKitPage() {
 
   if (
     completedKitId &&
-    diagnostics &&
-    mode === "single"
+    mode === "single" &&
+    (diagnostics || reusedExisting)
   ) {
-    const summaryItems =
-      buildSummaryItems(diagnostics);
+    const summaryItems = diagnostics
+      ? buildSummaryItems(diagnostics)
+      : [];
 
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#080808] px-6 text-white">
@@ -509,58 +520,64 @@ export default function NewKitPage() {
             <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
 
             <span className="text-sm tracking-[0.15em] text-emerald-400">
-              GENERATION COMPLETE
+              {reusedExisting
+                ? "EXISTING KIT REUSED"
+                : "GENERATION COMPLETE"}
             </span>
           </div>
 
           <h1 className="text-4xl font-semibold tracking-tight">
-            Your interview kit is ready.
+            {reusedExisting
+              ? "You already have this kit."
+              : "Your interview kit is ready."}
           </h1>
 
           <p className="mt-4 text-zinc-500">
-            Honest research summary before you open
-            the kit — including pages we could not
-            use and interview discussions we could
-            not verify.
+            {reusedExisting
+              ? "Same job description, company, and days — opened your existing completed kit instead of regenerating."
+              : "Honest research summary before you open the kit — including pages we could not use and interview discussions we could not verify."}
           </p>
 
-          <div className="mt-10 space-y-2">
-            {summaryItems.map((item) => (
-              <div
-                key={item.label}
-                className={`flex items-start gap-4 rounded-xl border px-4 py-3 ${
-                  item.status === "ok"
-                    ? "border-emerald-500/20 bg-emerald-500/[0.04]"
-                    : "border-amber-500/20 bg-amber-500/[0.04]"
-                }`}
-              >
+          {summaryItems.length > 0 && (
+            <div className="mt-10 space-y-2">
+              {summaryItems.map((item) => (
                 <div
-                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs ${
+                  key={item.label}
+                  className={`flex items-start gap-4 rounded-xl border px-4 py-3 ${
                     item.status === "ok"
-                      ? "bg-emerald-400 text-black"
-                      : "bg-amber-400/20 text-amber-400"
+                      ? "border-emerald-500/20 bg-emerald-500/[0.04]"
+                      : "border-amber-500/20 bg-amber-500/[0.04]"
                   }`}
                 >
-                  {item.status === "ok"
-                    ? "✓"
-                    : "!"}
+                  <div
+                    className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs ${
+                      item.status === "ok"
+                        ? "bg-emerald-400 text-black"
+                        : "bg-amber-400/20 text-amber-400"
+                    }`}
+                  >
+                    {item.status === "ok"
+                      ? "✓"
+                      : "!"}
+                  </div>
+
+                  <span
+                    className={`text-sm leading-6 ${
+                      item.status === "ok"
+                        ? "text-zinc-200"
+                        : "text-amber-200/90"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
                 </div>
+              ))}
+            </div>
+          )}
 
-                <span
-                  className={`text-sm leading-6 ${
-                    item.status === "ok"
-                      ? "text-zinc-200"
-                      : "text-amber-200/90"
-                  }`}
-                >
-                  {item.label}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {diagnostics.skippedSources.length >
-            0 && (
+          {diagnostics &&
+            diagnostics.skippedSources.length >
+              0 && (
             <div className="mt-6 rounded-xl border border-white/5 bg-black/30 p-4">
               <div className="text-[10px] uppercase tracking-wider text-zinc-600">
                 Skipped sources
@@ -586,7 +603,8 @@ export default function NewKitPage() {
             </div>
           )}
 
-          {!diagnostics.publicDiscussionFound &&
+          {diagnostics &&
+            !diagnostics.publicDiscussionFound &&
             diagnostics.publicDiscussionNote && (
               <p className="mt-5 text-xs leading-5 text-zinc-600">
                 {diagnostics.publicDiscussionNote}
