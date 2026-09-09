@@ -2,6 +2,9 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import dns from "node:dns/promises";
 import net from "node:net";
+import robotsParser from "robots-parser";
+
+import { withHttpRetry } from "../utils/httpRetry";
 
 export interface CrawledPage {
   url: string;
@@ -21,6 +24,7 @@ export interface CrawlResult {
 
 const MAX_PAGE_BYTES = 2 * 1024 * 1024;
 const MAX_PAGE_TEXT = 20_000;
+const USER_AGENT = "TraoInterviewPrepBot";
 
 function isPrivateIp(ip: string): boolean {
   if (net.isIPv4(ip)) {
@@ -99,6 +103,67 @@ async function validateUrl(
   }
 
   return url;
+}
+
+async function loadRobots(baseUrl: URL) {
+  const robotsUrl = new URL(
+    "/robots.txt",
+    baseUrl.origin
+  );
+
+  try {
+    const response =
+      await withHttpRetry(() =>
+        axios.get<string>(
+          robotsUrl.toString(),
+          {
+            timeout: 5_000,
+
+            headers: {
+              "User-Agent":
+                USER_AGENT,
+              Accept:
+                "text/plain",
+            },
+
+            validateStatus: () =>
+              true,
+          }
+        )
+      );
+
+    /*
+     * No robots.txt = no restrictions
+     */
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (
+      response.status < 200 ||
+      response.status >= 300
+    ) {
+      console.warn(
+        `robots.txt unavailable (${response.status})`
+      );
+
+      return null;
+    }
+
+    return robotsParser(
+      robotsUrl.toString(),
+      response.data
+    );
+  } catch (error) {
+    console.warn(
+      "Could not retrieve robots.txt:",
+      error instanceof Error
+        ? error.message
+        : error
+    );
+
+    return null;
+  }
 }
 
 function cleanPageText(html: string): {
@@ -245,22 +310,26 @@ async function fetchPage(
   url: string,
   score = 0
 ): Promise<CrawledPage> {
-  const response = await axios.get<string>(url, {
-    timeout: 10_000,
-    responseType: "text",
-    maxContentLength: MAX_PAGE_BYTES,
-    maxBodyLength: MAX_PAGE_BYTES,
-    maxRedirects: 5,
+  const response =
+    await withHttpRetry(() =>
+      axios.get<string>(url, {
+        timeout: 10_000,
+        responseType: "text",
+        maxContentLength: MAX_PAGE_BYTES,
+        maxBodyLength: MAX_PAGE_BYTES,
+        maxRedirects: 5,
 
-    headers: {
-      "User-Agent":
-        "TraoInterviewPrepBot/1.0 (+interview-preparation-assessment)",
-      Accept: "text/html,application/xhtml+xml",
-    },
+        headers: {
+          "User-Agent":
+            "TraoInterviewPrepBot/1.0 (+interview-preparation-assessment)",
+          Accept: "text/html,application/xhtml+xml",
+        },
 
-    validateStatus: (status) =>
-      status >= 200 && status < 400,
-  });
+        validateStatus: (status) =>
+          status >= 200 &&
+          status < 400,
+      })
+    );
 
   const contentType =
     String(response.headers["content-type"] || "").toLowerCase();
@@ -287,22 +356,41 @@ export async function crawlCompany(
 ): Promise<CrawlResult> {
   const validatedUrl = await validateUrl(companyUrl, options);
 
-  const homepageResponse = await axios.get<string>(
-    validatedUrl.toString(),
-    {
-      timeout: 10_000,
-      responseType: "text",
-      maxContentLength: MAX_PAGE_BYTES,
-      maxBodyLength: MAX_PAGE_BYTES,
-      maxRedirects: 5,
+  const robots =
+    await loadRobots(
+      validatedUrl
+    );
 
-      headers: {
-        "User-Agent":
-          "TraoInterviewPrepBot/1.0 (+interview-preparation-assessment)",
-        Accept: "text/html,application/xhtml+xml",
-      },
-    }
-  );
+  if (
+    robots?.isAllowed(
+      validatedUrl.toString(),
+      USER_AGENT
+    ) === false
+  ) {
+    throw new Error(
+      "Company homepage is blocked by robots.txt"
+    );
+  }
+
+  const homepageResponse =
+    await withHttpRetry(() =>
+      axios.get<string>(
+        validatedUrl.toString(),
+        {
+          timeout: 10_000,
+          responseType: "text",
+          maxContentLength: MAX_PAGE_BYTES,
+          maxBodyLength: MAX_PAGE_BYTES,
+          maxRedirects: 5,
+
+          headers: {
+            "User-Agent":
+              "TraoInterviewPrepBot/1.0 (+interview-preparation-assessment)",
+            Accept: "text/html,application/xhtml+xml",
+          },
+        }
+      )
+    );
 
   const contentType =
     String(
@@ -353,6 +441,21 @@ export async function crawlCompany(
   const skipped: CrawlResult["skipped"] = [];
 
   for (const link of selectedLinks) {
+    if (
+      robots?.isAllowed(
+        link.url,
+        USER_AGENT
+      ) === false
+    ) {
+      skipped.push({
+        url: link.url,
+        reason:
+          "Blocked by robots.txt",
+      });
+
+      continue;
+    }
+
     try {
       const page = await fetchPage(
         link.url,

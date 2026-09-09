@@ -1,0 +1,38 @@
+[
+  {
+    "id": "case-trao-swe",
+    "jd": "Software Engineer\n\nWe are looking for someone with strong React and Node.js experience.\n\nRequirements:\n- Strong React experience\n- Experience building APIs with Node.js and Express\n- Good communication and collaboration skills\n\nNice to have:\n- Docker experience\n",
+    "company_url": "https://www.trao.ai",
+    "days": 5
+  },
+  {
+    "id": "case-amazon-swe",
+    "jd": "Software Development Engineer\n\nAmazon is hiring an SDE to build scalable distributed systems.\n\nRequirements:\n- Strong coding skills in Java, C++, or Python\n- Experience with distributed systems and APIs\n- Data structures and algorithms\n- Ownership and communication skills\n\nNice to have:\n- AWS experience\n",
+    "company_url": "https://www.amazon.jobs",
+    "days": 5
+  },
+  {
+    "id": "case-tiny-jd",
+    "jd": "Engineer. Need React.",
+    "company_url": "https://www.trao.ai",
+    "days": 3
+  },
+  {
+    "id": "case-broken-company",
+    "jd": "Software Engineer\n\nRequirements:\n- Strong TypeScript experience\n- Experience with REST APIs\n",
+    "company_url": "https://this-domain-definitely-does-not-exist-trao-test.invalid",
+    "days": 3
+  },
+  {
+    "id": "case-one-day",
+    "jd": "Software Engineer\n\nRequirements:\n- Strong React experience\n- Node.js APIs\n- Communication skills\n",
+    "company_url": "https://www.trao.ai",
+    "days": 1
+  },
+  {
+    "id": "case-sixty-days",
+    "jd": "Software Engineer\n\nRequirements:\n- Strong React experience\n- Node.js and Express APIs\n- Communication and collaboration\n\nNice to have:\n- Docker\n",
+    "company_url": "https://www.trao.ai",
+    "days": 60
+  }
+]

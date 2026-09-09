@@ -1,0 +1,171 @@
+
+> backend@1.0.0 evaluate
+> tsx src/cli/evaluate.ts --input cases-benchmark.json --output kits-benchmark.json
+
+◇ injected env (6) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+
+Running case-trao-swe...
+Pipeline: extracting requirements
+Pipeline: crawling company
+
+Top discovered links:
+24 | Careers | https://www.trao.ai/careers
+ 0 | Our Datasets | https://www.trao.ai/our-datasets
+ 0 | Book a Call | https://www.trao.ai/qualifier
+Pipeline: generating company brief
+Pipeline: researching public interview process
+Interview research search: "Trao" "Software Engineer" interview experience
+Interview research candidates to scrape: 1
+Interview research scrape: https://www.jobaaj.com/company/trao-careers
+Firecrawl interview research credits: 3
+
+Verified interview evidence:
+60 | web | Trao Careers and Employment - Jobaaj
+  ↳ Trao Recruitment Process
+  ↳ Interview Process
+Pipeline: interview research found=true sources=1
+Pipeline: generating questions
+Generating technical questions...
+Generating behavioural questions...
+Generating system-design questions...
+Generating company-fit questions...
+Pipeline: checking coverage
+Pipeline: generating flashcards
+Pipeline: building schedule
+✓ case-trao-swe
+
+Running case-amazon-swe...
+Pipeline: extracting requirements
+Pipeline: crawling company
+
+Top discovered links:
+24 | Military careers | https://www.amazon.jobs/content/en/career-programs/military
+13 | How We Hire | https://www.amazon.jobs/content/how-we-hire/interviewing-at-amazon
+ 9 | Job categories | https://www.amazon.jobs/en/job_categories
+ 9 | Job Categories | https://www.amazon.jobs/content/en/job-categories
+ 7 | Culture | https://www.amazon.jobs/content/en/our-workplace
+ 5 | Teams | https://www.amazon.jobs/en/business_categories
+ 5 | Teams | https://www.amazon.jobs/content/en/teams
+ 0 | Home | https://www.amazon.jobs/en
+ 0 | Locations | https://www.amazon.jobs/en/locations
+ 0 | My applications | https://www.amazon.jobs/applicant/dashboard/applications
+Pipeline: generating company brief
+Pipeline: researching public interview process
+Interview research search: "Amazon Careers: Impact the Future, Today" "Software Development Engineer" interview experience
+Interview research search: "Amazon Careers: Impact the Future, Today" hiring process interview
+Interview research candidates to scrape: 0
+Firecrawl interview research credits: 4
+
+Verified interview evidence:
+Pipeline: interview research found=false sources=0
+Pipeline: generating questions
+Generating technical questions...
+Generating behavioural questions...
+Generating system-design questions...
+Generating company-fit questions...
+Pipeline: checking coverage
+Pipeline: generating flashcards
+Pipeline: building schedule
+✓ case-amazon-swe
+
+Running case-tiny-jd...
+Pipeline: extracting requirements
+Pipeline: crawling company
+
+Top discovered links:
+24 | Careers | https://www.trao.ai/careers
+ 0 | Our Datasets | https://www.trao.ai/our-datasets
+ 0 | Book a Call | https://www.trao.ai/qualifier
+Pipeline: generating company brief
+Pipeline: researching public interview process
+Interview research search: "Trao" "Engineer" interview experience
+Interview research search: "Trao" hiring process interview
+Interview research candidates to scrape: 1
+Interview research scrape: https://www.jobaaj.com/company/trao-careers
+Firecrawl interview research credits: 5
+
+Verified interview evidence:
+60 | web | Trao Careers and Employment - Jobaaj
+  ↳ Trao Recruitment Process
+  ↳ Interview Process
+Pipeline: interview research found=true sources=1
+Pipeline: generating questions
+Generating technical questions...
+Generating behavioural questions...
+Generating system-design questions...
+Generating company-fit questions...
+Pipeline: checking coverage
+Pipeline: generating flashcards
+Pipeline: building schedule
+✓ case-tiny-jd
+
+Running case-broken-company...
+Pipeline: extracting requirements
+Pipeline: crawling company
+Could not retrieve robots.txt: getaddrinfo ENOTFOUND this-domain-definitely-does-not-exist-trao-test.invalid
+✗ case-broken-company: getaddrinfo ENOTFOUND this-domain-definitely-does-not-exist-trao-test.invalid
+
+Running case-one-day...
+Pipeline: extracting requirements
+Pipeline: crawling company
+
+Top discovered links:
+24 | Careers | https://www.trao.ai/careers
+ 0 | Our Datasets | https://www.trao.ai/our-datasets
+ 0 | Book a Call | https://www.trao.ai/qualifier
+Pipeline: generating company brief
+Pipeline: researching public interview process
+Interview research search: "Trao" "Software Engineer" interview experience
+Interview research candidates to scrape: 1
+Interview research scrape: https://www.jobaaj.com/company/trao-careers
+Firecrawl interview research credits: 3
+
+Verified interview evidence:
+60 | web | Trao Careers and Employment - Jobaaj
+  ↳ Trao Recruitment Process
+  ↳ Interview Process
+Pipeline: interview research found=true sources=1
+Pipeline: generating questions
+Generating technical questions...
+Generating behavioural questions...
+Generating system-design questions...
+Generating company-fit questions...
+Pipeline: checking coverage
+Pipeline: generating flashcards
+Pipeline: building schedule
+✓ case-one-day
+
+Running case-sixty-days...
+Pipeline: extracting requirements
+Pipeline: crawling company
+
+Top discovered links:
+24 | Careers | https://www.trao.ai/careers
+ 0 | Our Datasets | https://www.trao.ai/our-datasets
+ 0 | Book a Call | https://www.trao.ai/qualifier
+Pipeline: generating company brief
+Pipeline: researching public interview process
+Interview research search: "Trao" "Software Engineer" interview experience
+Interview research candidates to scrape: 1
+Interview research scrape: https://www.jobaaj.com/company/trao-careers
+Firecrawl interview research credits: 3
+
+Verified interview evidence:
+60 | web | Trao Careers and Employment - Jobaaj
+  ↳ Trao Recruitment Process
+  ↳ Interview Process
+Pipeline: interview research found=true sources=1
+Pipeline: generating questions
+Generating technical questions...
+Generating behavioural questions...
+Generating system-design questions...
+Generating company-fit questions...
+Pipeline: checking coverage
+Pipeline: generating flashcards
+Pipeline: building schedule
+✓ case-sixty-days
+
+Evaluation complete: C:\Users\shubh\traq\kits-benchmark.json
+Success: 5
+Failed: 1
