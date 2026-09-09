@@ -693,6 +693,27 @@ export default function KitPage() {
       "company-fit",
     ];
 
+  const questionsById = new Map(
+    kit.questions.map((question) => [
+      question.id,
+      question,
+    ])
+  );
+
+  const requirementsById = new Map(
+    kit.role.requirements.map((requirement) => [
+      requirement.id,
+      requirement,
+    ])
+  );
+
+  const totalScheduleMinutes =
+    kit.schedule.days.reduce(
+      (total, day) =>
+        total + day.minutes,
+      0
+    );
+
   return (
     <main className="min-h-screen bg-[#080808] text-white">
 
@@ -1171,52 +1192,119 @@ export default function KitPage() {
                     </div>
 
                     <div className="space-y-3">
-                      {questions.map(
-                        (question) => {
-                          const edited =
-                            document.editorState.editedQuestionIds.includes(
-                              question.id
+                      {questions.map((question) => {
+                        const edited =
+                          document.editorState.editedQuestionIds.includes(
+                            question.id
+                          );
+
+                        const manual =
+                          document.editorState.manualQuestionIds.includes(
+                            question.id
+                          );
+
+                        const pinned =
+                          document.editorState.pinnedQuestionIds.includes(
+                            question.id
+                          );
+
+                        const isEditing =
+                          editingQuestion === question.id;
+
+                        const requirementLabels =
+                          question.requirement_ids
+                            .map((requirementId) =>
+                              requirementsById.get(
+                                requirementId
+                              )
+                            )
+                            .filter(
+                              (
+                                requirement
+                              ): requirement is Requirement =>
+                                Boolean(requirement)
                             );
 
-                          const manual =
-                            document.editorState.manualQuestionIds.includes(
-                              question.id
-                            );
+                        const stateLabel = manual
+                          ? "manual"
+                          : edited
+                            ? "edited"
+                            : "generated";
 
-                          const isEditing =
-                            editingQuestion ===
-                            question.id;
+                        const difficultyLabel =
+                          question.difficulty === 3
+                            ? "Hard"
+                            : question.difficulty === 2
+                              ? "Medium"
+                              : "Easy";
 
-                          return (
-                            <article
-                              key={
-                                question.id
-                              }
-                              className="rounded-2xl border border-white/10 bg-[#101010] p-5"
-                            >
-                              <div className="flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-zinc-600">
-                                    {
-                                      question.id
-                                    }
+                        return (
+                          <article
+                            key={question.id}
+                            className="group rounded-2xl border border-white/10 bg-[#101010] transition hover:border-white/[0.16]"
+                          >
+                            {/* CARD HEADER */}
+                            <div className="flex items-start justify-between gap-5 px-5 pt-5 sm:px-6 sm:pt-6">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-600">
+                                  {question.id}
+                                </span>
+
+                                <span className="rounded-md bg-white/[0.05] px-2 py-1 text-[10px] uppercase tracking-wide text-zinc-400">
+                                  {question.category.replace(
+                                    "-",
+                                    " "
+                                  )}
+                                </span>
+
+                                <span
+                                  className={`rounded-md px-2 py-1 text-[10px] font-medium ${
+                                    question.difficulty === 3
+                                      ? "bg-red-500/10 text-red-400"
+                                      : question.difficulty === 2
+                                        ? "bg-amber-500/10 text-amber-400"
+                                        : "bg-emerald-500/10 text-emerald-400"
+                                  }`}
+                                >
+                                  {difficultyLabel}
+                                </span>
+
+                                <span
+                                  className={`rounded-md px-2 py-1 text-[10px] uppercase tracking-wide ${
+                                    manual
+                                      ? "bg-blue-500/10 text-blue-400"
+                                      : edited
+                                        ? "bg-amber-500/10 text-amber-400"
+                                        : "bg-white/[0.04] text-zinc-600"
+                                  }`}
+                                >
+                                  {stateLabel}
+                                </span>
+
+                                {pinned && (
+                                  <span className="rounded-md bg-emerald-500/10 px-2 py-1 text-[10px] uppercase tracking-wide text-emerald-400">
+                                    pinned
                                   </span>
+                                )}
+                              </div>
 
-                                  {edited && (
-                                    <span className="rounded-md bg-amber-500/10 px-2 py-1 text-[10px] text-amber-400">
-                                      edited
-                                    </span>
-                                  )}
+                              {!isEditing && (
+                                <details className="relative shrink-0">
+                                  <summary className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg border border-white/10 text-lg leading-none text-zinc-500 transition hover:bg-white/5 hover:text-white">
+                                    ···
+                                  </summary>
 
-                                  {manual && (
-                                    <span className="rounded-md bg-blue-500/10 px-2 py-1 text-[10px] text-blue-400">
-                                      manual
-                                    </span>
-                                  )}
-                                </div>
+                                  <div className="absolute right-0 top-10 z-20 w-48 overflow-hidden rounded-xl border border-white/10 bg-[#151515] p-1 shadow-2xl">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        startEditing(question)
+                                      }
+                                      className="w-full rounded-lg px-3 py-2 text-left text-xs text-zinc-300 transition hover:bg-white/5"
+                                    >
+                                      Edit question
+                                    </button>
 
-                                {!isEditing && (
-                                  <div className="flex items-center gap-3">
                                     <button
                                       type="button"
                                       onClick={() =>
@@ -1225,10 +1313,9 @@ export default function KitPage() {
                                           "up"
                                         )
                                       }
-                                      className="rounded-md border border-white/10 px-2 py-1 text-xs text-zinc-500 hover:bg-white/5 hover:text-white"
-                                      title="Move up"
+                                      className="w-full rounded-lg px-3 py-2 text-left text-xs text-zinc-400 transition hover:bg-white/5 hover:text-white"
                                     >
-                                      ↑
+                                      ↑ Move up
                                     </button>
 
                                     <button
@@ -1239,176 +1326,208 @@ export default function KitPage() {
                                           "down"
                                         )
                                       }
-                                      className="rounded-md border border-white/10 px-2 py-1 text-xs text-zinc-500 hover:bg-white/5 hover:text-white"
-                                      title="Move down"
+                                      className="w-full rounded-lg px-3 py-2 text-left text-xs text-zinc-400 transition hover:bg-white/5 hover:text-white"
                                     >
-                                      ↓
+                                      ↓ Move down
                                     </button>
+
+                                    <div className="my-1 border-t border-white/[0.07]" />
+
+                                    <div className="px-3 pb-1 pt-2 text-[9px] uppercase tracking-wider text-zinc-700">
+                                      Move to category
+                                    </div>
 
                                     <select
                                       value={question.category}
                                       onChange={(e) =>
                                         moveQuestion(
                                           question.id,
-                                          e.target.value as Question["category"]
+                                          e.target
+                                            .value as Question["category"]
                                         )
                                       }
-                                      className="rounded-md border border-white/10 bg-black px-2 py-1 text-xs text-zinc-500"
+                                      className="mx-2 mb-2 w-[calc(100%-16px)] rounded-lg border border-white/10 bg-black px-2 py-2 text-xs text-zinc-400 outline-none"
                                     >
                                       <option value="technical">
                                         Technical
                                       </option>
+
                                       <option value="behavioural">
                                         Behavioural
                                       </option>
+
                                       <option value="system-design">
                                         System design
                                       </option>
+
                                       <option value="company-fit">
                                         Company fit
                                       </option>
                                     </select>
 
+                                    <div className="my-1 border-t border-white/[0.07]" />
+
                                     <button
                                       type="button"
                                       onClick={() =>
-                                        startEditing(
-                                          question
+                                        deleteQuestion(
+                                          question.id
                                         )
                                       }
-                                      className="text-xs text-zinc-500 hover:text-white"
+                                      className="w-full rounded-lg px-3 py-2 text-left text-xs text-red-400/70 transition hover:bg-red-500/[0.06] hover:text-red-400"
                                     >
-                                      Edit
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        deleteQuestion(question.id)
-                                      }
-                                      className="text-xs text-zinc-600 hover:text-red-400"
-                                    >
-                                      Delete
+                                      Delete question
                                     </button>
                                   </div>
-                                )}
-                              </div>
+                                </details>
+                              )}
+                            </div>
 
-                              {isEditing ? (
-                                <div className="mt-4 space-y-4">
+                            {isEditing ? (
+                              /* EDIT MODE */
+                              <div className="space-y-4 px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
+                                <div>
+                                  <label className="mb-2 block text-[10px] uppercase tracking-wider text-zinc-600">
+                                    Question
+                                  </label>
+
                                   <textarea
                                     value={
                                       questionDraft.prompt
                                     }
-                                    onChange={(
-                                      e
-                                    ) =>
-                                      setQuestionDraft(
-                                        {
-                                          ...questionDraft,
-                                          prompt:
-                                            e
-                                              .target
-                                              .value,
-                                        }
-                                      )
+                                    onChange={(e) =>
+                                      setQuestionDraft({
+                                        ...questionDraft,
+                                        prompt:
+                                          e.target.value,
+                                      })
                                     }
-                                    className="min-h-[100px] w-full rounded-xl border border-white/10 bg-black p-4 text-sm leading-6 outline-none focus:border-emerald-500/40"
+                                    className="min-h-[110px] w-full rounded-xl border border-white/10 bg-black p-4 text-sm leading-6 text-white outline-none transition focus:border-emerald-500/40"
                                   />
+                                </div>
+
+                                <div>
+                                  <label className="mb-2 block text-[10px] uppercase tracking-wider text-zinc-600">
+                                    Answer outline
+                                  </label>
 
                                   <textarea
                                     value={
                                       questionDraft.answer_outline
                                     }
-                                    onChange={(
-                                      e
-                                    ) =>
-                                      setQuestionDraft(
-                                        {
-                                          ...questionDraft,
-                                          answer_outline:
-                                            e
-                                              .target
-                                              .value,
-                                        }
+                                    onChange={(e) =>
+                                      setQuestionDraft({
+                                        ...questionDraft,
+                                        answer_outline:
+                                          e.target.value,
+                                      })
+                                    }
+                                    className="min-h-[140px] w-full rounded-xl border border-white/10 bg-black p-4 text-sm leading-6 text-zinc-400 outline-none transition focus:border-emerald-500/40"
+                                  />
+                                </div>
+
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    disabled={saving}
+                                    onClick={() =>
+                                      saveQuestion(
+                                        question.id
                                       )
                                     }
-                                    className="min-h-[130px] w-full rounded-xl border border-white/10 bg-black p-4 text-sm leading-6 text-zinc-400 outline-none focus:border-emerald-500/40"
-                                  />
+                                    className="rounded-lg bg-white px-4 py-2 text-xs font-medium text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                                  >
+                                    {saving
+                                      ? "Saving..."
+                                      : "Save changes"}
+                                  </button>
 
-                                  <div className="flex gap-2">
-                                    <button
-                                      type="button"
-                                      disabled={
-                                        saving
-                                      }
-                                      onClick={() =>
-                                        saveQuestion(
-                                          question.id
-                                        )
-                                      }
-                                      className="rounded-lg bg-white px-4 py-2 text-xs font-medium text-black"
-                                    >
-                                      {saving
-                                        ? "Saving..."
-                                        : "Save"}
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setEditingQuestion(
-                                          null
-                                        )
-                                      }
-                                      className="rounded-lg border border-white/10 px-4 py-2 text-xs text-zinc-500"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <>
-                                  <h3 className="mt-4 text-base font-medium leading-7">
-                                    {
-                                      question.prompt
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setEditingQuestion(
+                                        null
+                                      )
                                     }
+                                    className="rounded-lg border border-white/10 px-4 py-2 text-xs text-zinc-500 transition hover:text-white"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                {/* QUESTION */}
+                                <div className="px-5 pt-5 sm:px-6">
+                                  <h3 className="max-w-4xl text-[15px] font-medium leading-7 text-zinc-100 sm:text-base">
+                                    {question.prompt}
                                   </h3>
+                                </div>
 
-                                  <div className="mt-4 rounded-xl bg-black/40 p-4">
-                                    <div className="mb-2 text-[10px] uppercase tracking-wider text-zinc-600">
-                                      Answer outline
-                                    </div>
-
-                                    <p className="whitespace-pre-line text-sm leading-6 text-zinc-500">
-                                      {
-                                        question.answer_outline
-                                      }
-                                    </p>
+                                {/* ANSWER */}
+                                <div className="mx-5 mt-5 rounded-xl border border-white/[0.05] bg-black/30 p-4 sm:mx-6">
+                                  <div className="mb-2 text-[9px] uppercase tracking-[0.14em] text-zinc-600">
+                                    Answer outline
                                   </div>
 
-                                  <div className="mt-4 flex items-center justify-between text-xs text-zinc-600">
-                                    <span>
-                                      Difficulty{" "}
-                                      {
-                                        question.difficulty
-                                      }
-                                      /3
-                                    </span>
+                                  <p className="whitespace-pre-line text-sm leading-6 text-zinc-500">
+                                    {
+                                      question.answer_outline
+                                    }
+                                  </p>
+                                </div>
 
-                                    <span>
-                                      Covers{" "}
-                                      {question.requirement_ids.join(
-                                        ", "
-                                      )}
-                                    </span>
+                                {/* FOOTER */}
+                                <div className="mt-5 flex flex-col gap-3 border-t border-white/[0.06] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    {requirementLabels.length >
+                                    0 ? (
+                                      <>
+                                        <span className="mr-1 text-[9px] uppercase tracking-wider text-zinc-700">
+                                          Covers
+                                        </span>
+
+                                        {requirementLabels.map(
+                                          (requirement) => (
+                                            <span
+                                              key={
+                                                requirement.id
+                                              }
+                                              className={`rounded-lg border px-2.5 py-1 text-[10px] ${
+                                                requirement.priority ===
+                                                "must"
+                                                  ? "border-emerald-500/15 bg-emerald-500/[0.05] text-emerald-400"
+                                                  : "border-white/[0.07] bg-white/[0.02] text-zinc-500"
+                                              }`}
+                                            >
+                                              {requirement.text}
+
+                                              <span className="ml-1.5 text-zinc-700">
+                                                {
+                                                  requirement.id
+                                                }
+                                              </span>
+                                            </span>
+                                          )
+                                        )}
+                                      </>
+                                    ) : (
+                                      <span className="text-[10px] text-zinc-700">
+                                        General interview question
+                                      </span>
+                                    )}
                                   </div>
-                                </>
-                              )}
-                            </article>
-                          );
-                        }
-                      )}
+
+                                  <span className="text-[10px] text-zinc-700">
+                                    Difficulty{" "}
+                                    {question.difficulty}/3
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                          </article>
+                        );
+                      })}
                     </div>
                   </section>
                 );
@@ -1705,20 +1824,41 @@ export default function KitPage() {
         {/* SCHEDULE */}
         {tab === "schedule" && (
           <section className="mt-8">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            {/* HEADER */}
+            <div className="flex flex-col gap-6 border-b border-white/10 pb-7 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <h2 className="text-2xl font-medium">
-                  {kit.schedule.days_available}-day preparation plan
+                <div className="mb-2 text-xs uppercase tracking-[0.16em] text-emerald-400">
+                  Preparation roadmap
+                </div>
+
+                <h2 className="text-2xl font-medium sm:text-3xl">
+                  {kit.schedule.days_available}-day interview plan
                 </h2>
 
-                <p className="mt-2 text-sm text-zinc-500">
-                  Harder and higher-priority questions are scheduled earlier.
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
+                  Your highest-priority and hardest interview questions
+                  are front-loaded so you can prepare the important areas first.
                 </p>
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <span className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-1.5 text-xs text-zinc-400">
+                    {kit.questions.length} questions
+                  </span>
+
+                  <span className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-1.5 text-xs text-zinc-400">
+                    {totalScheduleMinutes} total minutes
+                  </span>
+
+                  <span className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5 text-xs text-emerald-400">
+                    ✓ Must-haves covered
+                  </span>
+                </div>
               </div>
 
-              <div className="flex items-end gap-3">
+              {/* REGENERATE */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div>
-                  <label className="mb-2 block text-xs text-zinc-600">
+                  <label className="mb-2 block text-[11px] uppercase tracking-wider text-zinc-600">
                     Days available
                   </label>
 
@@ -1738,7 +1878,7 @@ export default function KitPage() {
                         )
                       )
                     }
-                    className="w-24 rounded-xl border border-white/10 bg-black px-3 py-2.5 text-sm outline-none focus:border-emerald-500/40"
+                    className="w-full rounded-xl border border-white/10 bg-[#0d0d0d] px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-500/40 sm:w-24"
                   />
                 </div>
 
@@ -1746,69 +1886,233 @@ export default function KitPage() {
                   type="button"
                   onClick={regenerateSchedule}
                   disabled={scheduleRegenerating}
-                  className="rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                  className="rounded-xl bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {scheduleRegenerating
                     ? "Regenerating..."
-                    : "↻ Regenerate schedule"}
+                    : "↻ Regenerate plan"}
                 </button>
               </div>
             </div>
 
-            <div className="mt-8 space-y-4">
-              {kit.schedule.days.map(
-                (day) => (
-                  <div
-                    key={day.day}
-                    className="grid gap-5 rounded-2xl border border-white/10 bg-[#101010] p-5 md:grid-cols-[100px_1fr_100px]"
-                  >
-                    <div>
-                      <div className="text-xs text-zinc-600">
-                        DAY
-                      </div>
+            {/* TIMELINE */}
+            <div className="relative mt-8">
+              {/* desktop timeline line */}
+              <div className="absolute bottom-0 left-[23px] top-0 hidden w-px bg-white/10 md:block" />
 
-                      <div className="mt-1 text-2xl font-semibold">
-                        {day.day}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="font-medium">
-                        {day.focus}
-                      </div>
-
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {day.question_ids.map(
-                          (
+              <div className="space-y-5">
+                {kit.schedule.days.map(
+                  (day, dayIndex) => {
+                    const scheduledQuestions =
+                      day.question_ids
+                        .map((questionId) =>
+                          questionsById.get(
                             questionId
-                          ) => (
-                            <span
-                              key={
-                                questionId
-                              }
-                              className="rounded-md bg-white/5 px-2 py-1 text-xs text-zinc-500"
-                            >
-                              {
-                                questionId
-                              }
-                            </span>
                           )
-                        )}
-                      </div>
-                    </div>
+                        )
+                        .filter(
+                          (
+                            question
+                          ): question is Question =>
+                            Boolean(question)
+                        );
 
-                    <div className="md:text-right">
-                      <div className="text-xl font-medium">
-                        {day.minutes}
-                      </div>
+                    return (
+                      <article
+                        key={day.day}
+                        className="relative md:pl-16"
+                      >
+                        {/* TIMELINE DOT */}
+                        <div className="absolute left-0 top-7 hidden h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-[#080808] text-sm font-semibold text-zinc-300 md:flex">
+                          {day.day}
+                        </div>
 
-                      <div className="text-xs text-zinc-600">
-                        minutes
-                      </div>
-                    </div>
-                  </div>
-                )
-              )}
+                        <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#101010]">
+                          {/* DAY HEADER */}
+                          <div className="flex flex-col gap-4 border-b border-white/[0.07] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                            <div className="flex items-start gap-4">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] text-sm font-semibold text-emerald-400 md:hidden">
+                                {day.day}
+                              </div>
+
+                              <div>
+                                <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">
+                                  Day {day.day}
+                                </div>
+
+                                <h3 className="mt-1 text-lg font-medium text-zinc-100">
+                                  {day.focus}
+                                </h3>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <div className="text-xl font-medium">
+                                  {day.minutes}
+                                </div>
+
+                                <div className="text-[10px] uppercase tracking-wider text-zinc-600">
+                                  minutes
+                                </div>
+                              </div>
+
+                              <div className="h-8 w-px bg-white/10" />
+
+                              <div className="text-right">
+                                <div className="text-xl font-medium">
+                                  {
+                                    scheduledQuestions.length
+                                  }
+                                </div>
+
+                                <div className="text-[10px] uppercase tracking-wider text-zinc-600">
+                                  questions
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* QUESTIONS */}
+                          <div className="space-y-2 p-4 sm:p-5">
+                            {scheduledQuestions.length >
+                            0 ? (
+                              scheduledQuestions.map(
+                                (
+                                  question,
+                                  questionIndex
+                                ) => (
+                                  <div
+                                    key={question.id}
+                                    className="group rounded-xl border border-white/[0.06] bg-black/30 p-4 transition hover:border-white/10 hover:bg-black/50"
+                                  >
+                                    <div className="flex gap-4">
+                                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-[11px] text-zinc-600">
+                                        {questionIndex +
+                                          1}
+                                      </div>
+
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <span className="rounded-md bg-white/[0.05] px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+                                            {question.category.replace(
+                                              "-",
+                                              " "
+                                            )}
+                                          </span>
+
+                                          <span
+                                            className={`rounded-md px-2 py-1 text-[10px] ${
+                                              question.difficulty ===
+                                              3
+                                                ? "bg-red-500/10 text-red-400"
+                                                : question.difficulty ===
+                                                  2
+                                                ? "bg-amber-500/10 text-amber-400"
+                                                : "bg-emerald-500/10 text-emerald-400"
+                                            }`}
+                                          >
+                                            Difficulty{" "}
+                                            {
+                                              question.difficulty
+                                            }
+                                            /3
+                                          </span>
+
+                                          <span className="text-[10px] text-zinc-700">
+                                            {
+                                              question.id
+                                            }
+                                          </span>
+                                        </div>
+
+                                        <p className="mt-3 text-sm leading-6 text-zinc-300">
+                                          {
+                                            question.prompt
+                                          }
+                                        </p>
+
+                                        {question
+                                          .requirement_ids
+                                          .length > 0 && (
+                                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                                            <span className="text-[10px] uppercase tracking-wider text-zinc-700">
+                                              Covers
+                                            </span>
+
+                                            {question.requirement_ids.map(
+                                              (
+                                                requirementId
+                                              ) => (
+                                                <span
+                                                  key={
+                                                    requirementId
+                                                  }
+                                                  className="rounded-md border border-white/[0.06] px-2 py-1 text-[10px] text-zinc-600"
+                                                >
+                                                  {
+                                                    requirementId
+                                                  }
+                                                </span>
+                                              )
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              )
+                            ) : (
+                              <div className="rounded-xl border border-dashed border-white/10 p-5 text-center text-sm text-zinc-600">
+                                Review and reinforcement
+                              </div>
+                            )}
+                          </div>
+
+                          {/* PROGRESS */}
+                          <div className="border-t border-white/[0.05] px-5 py-3">
+                            <div className="flex items-center justify-between text-[10px] text-zinc-700">
+                              <span>
+                                Day {day.day} of{" "}
+                                {
+                                  kit.schedule
+                                    .days_available
+                                }
+                              </span>
+
+                              <span>
+                                {Math.round(
+                                  ((dayIndex + 1) /
+                                    kit.schedule
+                                      .days_available) *
+                                    100
+                                )}
+                                % through plan
+                              </span>
+                            </div>
+
+                            <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.05]">
+                              <div
+                                className="h-full rounded-full bg-emerald-400"
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    ((dayIndex + 1) /
+                                      kit.schedule
+                                        .days_available) *
+                                      100
+                                  )}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  }
+                )}
+              </div>
             </div>
           </section>
         )}
